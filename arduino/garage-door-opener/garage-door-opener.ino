@@ -1,7 +1,7 @@
 /*
+2017/11/03
 
 TODO
-
 - translate comments to English
 - change direction (100=0 and 0 is 100 (open is close)
 - add and config params (mix/max) via CONFIG
@@ -60,16 +60,17 @@ const char* password = pws_config;
 String deviceSwVersion = "2017-10-1";
 String deviceBoard = "RobotDyn Wifi D1R2";
 char* deviceId = "esp8266garage";
-String deviceName = "GarageMan";
-String deviceLocation = "Garáž";
+String deviceName = "GarageController";
+String deviceLocation = "Garage";
 
+  //server IP address - where he is listening
   //nastavení serveru, na který budu poslouchat a posílat POST
   //const char* targetServer = "192.168.0.40"; //IP adresa lokálního serveru - naučit mDNS
-  const char* targetServer = "192.168.0.18"; //macBook - 40-RPi.nanoWifi
+  const char* targetServer = "192.168.0.18"; //macBook - 192.168.0.40=RPi.nanoWifi
   
   const int httpPort = 9090;
 
-//pozice garazovych dveří
+//Garage Door positions 
   const int CurrentDoorStateOpen = 0;
   const int CurrentDoorStateClosed = 1;
   const int CurrentDoorStateOpening = 2;
@@ -77,14 +78,14 @@ String deviceLocation = "Garáž";
   const int CurrentDoorStateStopped = 4;
   const int TargetDoorStateOpen = 0;
   const int TargetDoorStateClosed = 1;
-  const int DoorMaxCm = 70;    //aretace: vzdálenost v CM, když jsou vrata otevřena - mezní stav
-  const int DoorMinCm = 20;      //aretace: vzdálenost v CM, když jsou vrata zavřena - mezní stav
+  const int DoorMaxCm = 70;    //real position in cm, when the door are open 
+  const int DoorMinCm = 20;      //real position in cm, when the door are closed 
   
   int CurrentDoorState = CurrentDoorStateOpen;
   int TargetDoorState = TargetDoorStateOpen;
-  int TargetDoorOpen = 100;   //na kolik procent mají být dveře tevřené
-  int doorPositionLast = 100; //poslední pozice dveří
-  int doorLenght = DoorMaxCm - DoorMinCm; //velikost dveří
+  int TargetDoorOpen = 100;   //how many percents you want to open the door? Target positoin.
+  int doorPositionLast = 100; //Last door position 
+  int doorLenght = DoorMaxCm - DoorMinCm; //Size of the door 
 
   bool ObstructionDetected = false; //ne nějaká překážka ve vratech? Pokud ano, tak true
   bool doorIsMoving = false;        //jsou li vrata v pohybu , tak true
