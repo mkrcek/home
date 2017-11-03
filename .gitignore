@@ -12,3 +12,6 @@
 
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
+
+# Arduino: Local wi-fi configuration file
+wifi_config.h
