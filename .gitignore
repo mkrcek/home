@@ -15,3 +15,6 @@
 
 # Arduino: Local wi-fi configuration file
 wifi_config.h
+
+# temp HomeKit files and folder
+/go-land/garage-door-opener/db3/*

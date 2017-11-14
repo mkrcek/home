@@ -1,24 +1,38 @@
+
+// ---------------------------------------------------------------------------
+// Garage Door Opener by HTTP GET & POST + Apple HOMEKIT
+//    DEVICE
+// ---------------------------------------------------------------------------
+
 /*
-2017/11/03
+Functionality:
+- open door
+- close door
+- report all States (Open/Closed/Opening/Closing/Stop/Obstruction) 
+- report percentage of opening
+- set size (lenght) of garage door: GarageMin, GarageMax, MeasureDelay by HTTP POST
+    look at >>handleConfigSetDoor<<
+- compatible with Apple HOMEKIT
+    look at >>server garage-door-opener.go<<
+
 
 TODO
-- translate comments to English
-- change direction (100=0 and 0 is 100 (open is close)
-- add and config params (mix/max) via CONFIG
+- stop at target position (e.g. 40%)
+
+NOTE:
+- inside the code is more functinality - not used in this case. E.G. SWITCH, LAMP, LED PWM, PIR senson, Light Sensor
 
 */
 
-// ---------------------------------------------------------------------------
-// Garage Door Opener by HTTP GET and HTTP POST
-// ---------------------------------------------------------------------------
-
 #include <NewPing.h>    //https://bitbucket.org/teckel12/arduino-new-ping/wiki/Home
+
+#include <math.h>       
 
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
-#include <ArduinoJson.h>    //knihovna na JSON https://bblanchon.github.io/ArduinoJson/
+#include <ArduinoJson.h>    //JSON https://bblanchon.github.io/ArduinoJson/
 
 
 //                 PIN:{ 0, 1, 2, 3, 4,  5,  6,  7,  8 }    | PIN cislo [5] = LED modrá na boardu
@@ -29,7 +43,7 @@ String locationPins[] = { "", "", "", "", "", "", "", "", ""};        //popis um
 bool digitalWritePins[] = { false, false, false, false, false, true, false, false, false};   //piny 5 jsou vystupní
 bool relayOnHighPins[] = { true, true, true, true, true, true, true, true, true}; //čím se sepne relé true = HIGH
 
-bool inusePin[] = { false, false, false, false, true, false, true, true, false};       //jeli pin používán
+bool inusePin[] = { false, false, false, false, false, true, true, true, false};       //jeli pin používán
 int clickPin[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1};  //tlacitko-click se přepne uvedený PIN. -1 je nenastaveno
 int click2Pin[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1};  //tlacitko-double click se přepne uvedený PIN. -1 je nenastaveno
 int clickHoldStartPin[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1};  //tlacitko-Začne držet ... se přepne uvedený PIN. -1 je nenastaveno
@@ -37,40 +51,34 @@ int clickHoldDoPin[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1};  //tlacitko-Drží
 int clickHoldEndPin[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1};  //tlacitko-Pustí držení .... se přepne uvedený PIN. -1 je nenastaveno
 
 
-//int pocet = 0; //ULTARZVUK pro výpočet počtu průchodů - počet zboží na projíždějícím páse
-//musí být napajeno +5V, 3.3 nestačí
 
-//rele připojeno na PIN 5
-#define TRIGGER_PIN  digitalPins[7]  // Arduino pin tied to trigger pin on the ultrasonic sensor.
-#define ECHO_PIN     digitalPins[6]  // Arduino pin tied to echo pin on the ultrasonic sensor.
-#define MAX_DISTANCE 350 // Maximum distance we want to ping for (in centimeters). Maximum sensor distance is rated at 400-500cm.
+// ************* ARDUINO BORAD configuration *****
 
-
-/*wifi configuration
- * Wifi credential are stored in local config file, the same local folder. See example file called "wifi_config_example"
- * Filename: wifi_config.h
- * And inside of the file are those lines
- * #define ssid_config "your-wifi-ssid-name" 
- * #define pws_config "your-wifi-ssid-password")
-*/
-#include "wifi_config.h"   
-const char* ssid = ssid_config; 
-const char* password = pws_config;
-
-String deviceSwVersion = "2017-10-1";
+String deviceSwVersion = "2017-11-14";
 String deviceBoard = "RobotDyn Wifi D1R2";
 char* deviceId = "esp8266garage";
 String deviceName = "GarageController";
 String deviceLocation = "Garage";
 
-  //server IP address - where he is listening
-  //nastavení serveru, na který budu poslouchat a posílat POST
-  //const char* targetServer = "192.168.0.40"; //IP adresa lokálního serveru - naučit mDNS
-  const char* targetServer = "192.168.0.18"; //macBook - 192.168.0.40=RPi.nanoWifi
-  
-  const int httpPort = 9090;
 
-//Garage Door positions 
+// ************* LOCAL WIFI configuration *****
+/* 
+ * Wifi credential are stored in local config file, the same local folder. See example file called "wifi_config_example"
+ * Filename: wifi_config.h
+ * And inside of the file are those lines
+ * #define ssid_config "your-wifi-ssid-name" 
+ * #define pws_config "your-wifi-ssid-password")
+ * //end the SERVER IP adress :
+ * #define target_Server "192.168.0.100"
+*/
+#include "wifi_config.h"   
+const char* ssid = ssid_config; 
+const char* password = pws_config;
+const char* targetServer = target_Server;   //server IP address - where he is listening
+  
+
+
+// ************* Garage Door configuration *****
   const int CurrentDoorStateOpen = 0;
   const int CurrentDoorStateClosed = 1;
   const int CurrentDoorStateOpening = 2;
@@ -78,117 +86,197 @@ String deviceLocation = "Garage";
   const int CurrentDoorStateStopped = 4;
   const int TargetDoorStateOpen = 0;
   const int TargetDoorStateClosed = 1;
-  const int DoorMaxCm = 70;    //real position in cm, when the door are open 
-  const int DoorMinCm = 20;      //real position in cm, when the door are closed 
   
-  int CurrentDoorState = CurrentDoorStateOpen;
-  int TargetDoorState = TargetDoorStateOpen;
-  int TargetDoorOpen = 100;   //how many percents you want to open the door? Target positoin.
+  int DoorMaxCm = 100; //257;    //MAX: 258-260 test: 70 | real position in cm, when the door are open    
+  int DoorMinCm = 8;      //MIX: 8 | test: 20 | real position in cm, when the door are closed 
+  
+  int CurrentDoorState = CurrentDoorStateClosed;
+  int TargetDoorState = TargetDoorStateClosed;
+  int TargetDoorOpen = 0;   //how many percents you want to open the door? Target positoin.
   int doorPositionLast = 100; //Last door position 
   int doorLenght = DoorMaxCm - DoorMinCm; //Size of the door 
+  int doorMeasureTimeDelay = 1000;    //how often will be measered the position of the garade door
+                                     // Wait 50ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
+                                     //slow door => higher value, fast door => smaller
+  int doorMeasureTimeTemp = 0;    //temp time
+  int arduinoTime = 0;            //arduino real time
+  
 
   bool ObstructionDetected = false; //ne nějaká překážka ve vratech? Pokud ano, tak true
   bool doorIsMoving = false;        //jsou li vrata v pohybu , tak true
   bool changeDoorState = false;     //požadavek uživatele na změnu pozice dveří
 
-  int realDoorPosition = -1;     //skutečná vzdálenost naměřená v cm
-  int doorPosition = -1 ;         //přepočítaná vzdálenost na procenta
+  int realDoorPosition = 0;     //skutečná vzdálenost naměřená v cm
+  int doorPosition = 0 ;         //přepočítaná vzdálenost na procenta
 
   int NewTargetDoorState = TargetDoorState;    //nová pozice zadaná uživatelem
-  int NewTargetDoorOpen = TargetDoorOpen;     //nová pozice zadaná uživatelem
+  int NewTargetDoorOpen = TargetDoorStateClosed;     //nová pozice zadaná uživatelem
+
+  int historyDoorPosition[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};  //last 10 positions of the door - use as a filter and count average position
+  int historyDoorDirection[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};  //last 10 directions of the door - 0=same, -1 decreasing, +1 increasing
+  int averageDoorDirection = 0;
+
   
+  
+// ************* ULTRASONIC configuration *****
+//ULTRASONIC senson on +5V, 3.3 is not enought
 
-// ************* inicializace serveru na portu :80
-ESP8266WebServer server(80);
+#define GARAGE_MOTOR_PIN  5  // Arduino pin with relay for GARAGE MOTOR-ENGINE
+#define ECHO_PIN     digitalPins[6]  // Arduino pin tied to echo pin on the ultrasonic sensor.
+#define TRIGGER_PIN  digitalPins[7]  // Arduino pin tied to trigger pin on the ultrasonic sensor.
+#define MAX_DISTANCE 300 // Maximum distance we want to ping for (in centimeters). Maximum sensor distance is rated at 400-500cm.
 
-
-// ************* inicializace měření vzdálenosti
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); // NewPing setup of pins and maximum distance.
 
 
-void myGaradeDoor() {     //manažer pro pohyb dveří
-  
-  //zjistí aktuální stav dveří
-  realDoorPosition = sonar.ping_cm();     //skutečná vzdálenost naměřená v cm
-  doorPosition = (realDoorPosition - DoorMinCm) *100 / doorLenght ;         //přepočítaná vzdálenost na procenta
 
-//je nový požadavek na změnu dveří? 
+
+// ************* inicialisation of the serven on the port: 80 *****
+ESP8266WebServer server(80);
+
+
+
+int newAverageDoorPosition (int p) {      //get new average position & diretion from history of measurements
+    int historyLength = 5;   //max 10 size of array
+    Serial.print("history: ");
+    float avrg = 0.0;       //to get the right numbers 
+    float avDir = 0.0;
+    
+    for (int i = 0; i < (historyLength-1) ; i++) {
+      historyDoorPosition[i] = historyDoorPosition[i+1];
+      historyDoorDirection[i] = historyDoorDirection [i+1];
+      avrg = avrg + historyDoorPosition[i];
+      avDir = avDir + historyDoorDirection[i];
+      Serial.print(historyDoorPosition[i]);
+      Serial.print("/");
+      Serial.print(historyDoorDirection[i]);
+      Serial.print(",");
+    }
+    
+    if (historyDoorPosition[(historyLength-1)] > p) { 
+        historyDoorDirection[(historyLength-1)] = 1;
+    }
+    if (historyDoorPosition[(historyLength-1)] < p) { 
+        historyDoorDirection[(historyLength-1)] = -1;
+    }
+    if (historyDoorPosition[(historyLength-1)] == p) { 
+        historyDoorDirection[(historyLength-1)] = 0;
+    }
+    
+    historyDoorPosition[(historyLength-1)] = p;
+    Serial.print(historyDoorPosition[(historyLength-1)]);
+    Serial.print("/");
+    Serial.print(historyDoorDirection[(historyLength-1)]);
+    Serial.print(" = ");
+    avrg = avrg + historyDoorPosition[(historyLength-1)];
+    avrg = avrg / historyLength;
+    avrg = round(avrg);                   // and round it
+    Serial.print(avrg);
+    Serial.print(" // ");
+    
+    avDir = avDir + historyDoorDirection[(historyLength-1)];
+    avDir = avDir / historyLength;
+    avDir = round (avDir);
+    averageDoorDirection = avDir;  
+    Serial.print(avDir);
+    Serial.print(" // ");
+       
+    return (int) avrg;    //
+}
+
+
+void myGaradeDoor() {     //manager for garame-door-opener
+  
+  //get real - actual door position
+  realDoorPosition = sonar.ping_cm();     //get real lenght of the door in cm 
+   
+  realDoorPosition = newAverageDoorPosition(realDoorPosition);
+  doorPosition = (realDoorPosition - DoorMinCm) *100 / doorLenght ;         //re-count from cm to percentage
+  if (doorPosition < 0)   { doorPosition = 0; }
+  if (doorPosition > 100) {doorPosition = 100; }
+  doorPosition = 100 - doorPosition; //revert the orientation. (the shortest distance = garage is open) 
+
+
+  Serial.print("real: ");
+  Serial.print( realDoorPosition ); // real door position in cm
+  Serial.print("cm, ");
+  Serial.print( doorPosition ); // door position in %
+  Serial.print(" %, ");
+  if (doorIsMoving) { 
+      Serial.print("door-is-moving"); 
+    } else { 
+      Serial.print("door-is-NOT-moving"); 
+  }
+  
+
+//new request to MOVE the door?  
   if (changeDoorState == true) { 
-    if (NewTargetDoorState == CurrentDoorState) {  //pokud jsem už v požadované pozici - tak nic nedelěj
+    if (NewTargetDoorState == CurrentDoorState) {  //if door is in target position = dont do anything
        TargetDoorState = NewTargetDoorState;
        changeDoorState = false;
-     } else {                                      //pokud NEjsem v požadované pozici - start motor
+     } else {                                      //if door is NOT in target position = start motor
        TargetDoorState = NewTargetDoorState;
-       Serial.println("pustit MOTOR - ONNNNN");
-       PressRelayButton(5);
+       Serial.println("");
+       Serial.println("RUN THE ENGINE / MOTOR - Wrrrrrrw");
+       Serial.println("");
+       PressRelayButton(GARAGE_MOTOR_PIN);
        changeDoorState = false;
        doorIsMoving = true;
      }
-  } //konec požadavku na změnu dveří
-    
-    //  if (NewTargetDoorState != TargetDoorState) {
-//     Serial.println("pustit MOTOR - ONNNNN");
-//     doorIsMoving = true;
-//     TargetDoorState = NewTargetDoorState;
-//  }
+  } //end IF 
   
 
+//measure and report the position 
 
-if (doorPosition <= 0) {                        //je li zavřena garáž
-    CurrentDoorState = CurrentDoorStateClosed;
-    ObstructionDetected = false;
-    doorPositionLast = doorPosition;
-    Serial.println("zavreno 0%");
-    if ( TargetDoorState == TargetDoorStateClosed ) {
+if (doorPosition <= 5) {                        //if the door is CLOSED (+/- 5 % )
+      CurrentDoorState = CurrentDoorStateClosed;
+      ObstructionDetected = false;
+      doorPositionLast = doorPosition;
+      Serial.println("....CLOSED");
+      if ( TargetDoorState == TargetDoorStateClosed ) {
         doorIsMoving = false;
       }
     } else {
-    if (doorPosition >= 100) {                      //je li otevřeno 100 %
+    if (doorPosition >= 95) {                      //if the door is OPEN (+/- 5 % )
       CurrentDoorState = CurrentDoorStateOpen;
       ObstructionDetected = false;
       doorPositionLast = doorPosition;
-      Serial.println("otevreno 100%");
+      Serial.println("....OPEN");
       if ( TargetDoorState == TargetDoorStateOpen ) {
           doorIsMoving = false;
         }
-      } else
-      if (doorPosition > doorPositionLast) {          //otvírá se garáž
-        CurrentDoorState = CurrentDoorStateOpening;
-        ObstructionDetected = false;
-        doorPositionLast = doorPosition;
-        Serial.println("....otvira");
-        } else
-        if (doorPosition < doorPositionLast) {          //zavira se garaz
-          CurrentDoorState = CurrentDoorStateClosing;
-          ObstructionDetected = false;
-          doorPositionLast = doorPosition;
-          Serial.println("....zavira");
-          } else
-          if (doorPosition == TargetDoorOpen) {        //cílova pozice dosažena
-            CurrentDoorState = CurrentDoorStateStopped;
+      } else {
+          if (averageDoorDirection == 1) {
+            CurrentDoorState = CurrentDoorStateOpening;
             ObstructionDetected = false;
-            doorPositionLast = doorPosition;      //když dorazí do požadované úrovně, tak se vypne motor
-            if (doorIsMoving == true) {
-              doorIsMoving = false;
-              Serial.println("zastavit MOTOR");   //když nahoru, tak 1xSTOP. Když dolů, 2xSTOP
-              
-              }
-            Serial.println("zastaveno na pozadovane pozici");
-            } else
-            if (doorPosition == doorPositionLast) {        //problem - dveře se zastavily na překážce
+            doorPositionLast = doorPosition;
+            Serial.println("....opening UP");
+            }
+          if (averageDoorDirection == -1) {
+            CurrentDoorState = CurrentDoorStateClosing;
+            ObstructionDetected = false;
+            doorPositionLast = doorPosition;
+            Serial.println("....closing DOWN");
+            }  
+          if (averageDoorDirection == 0) {           //if door STOPed
+            if (doorPosition == TargetDoorOpen) {
+              CurrentDoorState = CurrentDoorStateStopped;
+              ObstructionDetected = false;
+              doorPositionLast = doorPosition;
+              Serial.println("....Target position");
+            } else {
               CurrentDoorState = CurrentDoorStateStopped;
               ObstructionDetected = true;
-              Serial.println("prekazka ve vratech");
-              }
-    }
-  //konec dlouheho IF->ELSE
-
-
-  
+              doorPositionLast = doorPosition;
+              Serial.println("....Obstruction Detected");
+            }
+          } //end if-STOPed
+        }
+    } //end of the loooong IF->ELSE 
 }  
 
 
-void handleGetDoor() {    //informace o DOOR
+void handleGetDoor() {    //information about DOOR to HTTP GET
 
   //nastavení hlavicky
   server.sendHeader("Connection", "keep-alive"); //BODY bude delší, tak se nenastavuje na NULU
@@ -219,7 +307,7 @@ void handleGetDoor() {    //informace o DOOR
   }
 }
 
-void handleSetDoor() {     //nastaví digitální PIN na 0/1 nebo pozici (%) otevření door
+void handleSetDoor() {     //set OPEN/CLOSE door ... later on the Target Position like 40%
 
   String message = "";
   //==JSON cteni obsahu ==
@@ -230,25 +318,98 @@ void handleSetDoor() {     //nastaví digitální PIN na 0/1 nebo pozici (%) ote
     return;
   }
   // Retrieve the values
-  NewTargetDoorState = root["TargetDoorState"];    //nastaví se nejseli se má otevřít nebo zavřít
-  NewTargetDoorOpen = root["TargetDoorOpen"];      //případně se nastaví na kolik procent otevřít
+  NewTargetDoorState = root["TargetDoorState"];    //set open / close
+  NewTargetDoorOpen = root["TargetDoorOpen"];      //set target postion like 40 %  - not implemented yet
   //==
   
-  changeDoorState = true;                         //byl požadavek ke změnu pozice dveří
+  changeDoorState = true;                         //New task: change the postion 
   
   server.send(200, "text/plain", "Konfigurace nastavena");
-
-//  if (NewTargetDoorState != TargetDoorState) {
-//     Serial.println("pustit MOTOR - ONNNNN");
-//     doorIsMoving = true;
-//     TargetDoorState = NewTargetDoorState;
-//  }
 
 
 } //konec fce
 
 
+void handleConfigSetDoor() {     //Set new values for Max and Mix for garage door
+  /*  
+   *  HOW TO DO IT:
+   * 1st: setup max value : 
+   * - close the garage door - max Length from ultrasonic sensor  
+   * - send POST {"setDoorMax":true, "setDoorMin":false}
+   * when it is done, do:
+   * 2nd: setup min value: 
+   * - open the garage door - min Length from ultrasonic sensor  
+   * - send POST {"setDoorMax":false, "setDoorMin":true}
+   * 
+   * to set Delay
+   * POST :  {"setDoorMax":false, "setDoorMin":false, "setDoorDelay":1000}
+  */
+  String message = "";
+  bool setDoorMax = false;      //I want to setup Max 
+  bool setDoorMin = false;      //I want to setup Mim
+  int setDoorDelay = 0;         //Delay for measure
+  
+  //==JSON cteni obsahu ==
+  StaticJsonBuffer<250> jsonBuffer;                           //Reserve memory space
+  JsonObject& root = jsonBuffer.parseObject(server.arg(0));   //Deserialize the JSON string, count here: https://bblanchon.github.io/ArduinoJson/assistant/
+  if (!root.success())  {           //when JSON is in not right format - error
+    server.send(400, "text/plain", "Nepodarilo se precist JSON");
+    return;
+  }
+  // Retrieve the values
+  setDoorMax = root["setDoorMax"];    //I want to setup Max: set up one-by-one
+  setDoorMin = root["setDoorMin"];      //I want to setup Min - set up one-by-one
+  setDoorDelay = root["setDoorDelay"];      //how often will be measered the position of the garade door, min 50ms
 
+  //==
+
+  if (setDoorMax) {
+    DoorMaxCm = sonar.ping_cm();     //in v cm  
+  }
+  if (setDoorMin) {
+    DoorMinCm = sonar.ping_cm();     //in v cm  
+  }
+  doorLenght = DoorMaxCm - DoorMinCm; //calculate new Size/Lenght of the door 
+
+  if (setDoorDelay > 50) {
+    doorMeasureTimeDelay = setDoorDelay;
+    }
+  
+  server.send(200, "text/plain", "Konfigurace nastavena");
+
+} //konec fce
+
+void handleGetConfigDoor() { //Get configuration of curent Max and Mix for garage door
+
+  
+  //nastavení hlavicky
+  server.sendHeader("Connection", "keep-alive"); //BODY bude delší, tak se nenastavuje na NULU
+  server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
+  server.sendHeader("Access-Control-Allow-Headers", "X-Requested-With,content-type");
+  server.sendHeader("Access-Control-Max-Age", "86400");
+
+  String message = "";
+
+  {
+
+    //==JSON vytvoreni obsahu ==
+    StaticJsonBuffer<250> jsonBuffer;                           //Reserve memory space
+    JsonObject& root = jsonBuffer.createObject();
+    root["DoorMaxCm"] = DoorMaxCm;
+    root["DoorMinCm"] = DoorMinCm;
+    root["setDoorDelay"] = doorMeasureTimeDelay;
+    
+
+    //==JSON generuje vystup ==
+    int len = root.measureLength() + 1; //size of the message
+    char rootstr[len];
+    root.printTo(rootstr, len);         //generate JSON
+    message += rootstr;
+
+    server.send(200, "application/javascript", message);
+  }
+
+} //konec fce
 
 void handleOptionsDoor() {   //korekce pro CORS
   //pokud je POST z jiné "domeny" - což je skoro vzdy viz CORS https://developer.mozilla.org/en-US/docs/Glossary/Preflight_request
@@ -264,6 +425,10 @@ void handleOptionsDoor() {   //korekce pro CORS
 
   server.send(204);
 }
+
+
+
+
 
 
 void handleGetDigiPin() {     //zjistí stav digitalního PINu
@@ -776,6 +941,9 @@ void setup() {
     delay(500);
     Serial.print(".");
   }
+
+
+  
   Serial.println("");
   Serial.print("Connected to ");
   Serial.println(ssid);
@@ -792,6 +960,10 @@ void setup() {
   server.on("/door", HTTP_GET, handleGetDoor);  //informace o dveřích
   server.on("/door", HTTP_POST, handleSetDoor); //nastaví otvirani dveří
   server.on("/door", HTTP_OPTIONS, handleOptionsDoor);  //option pro dveře
+  server.on("/door/config", HTTP_GET, handleGetConfigDoor);  //informace o dveřích
+  server.on("/door/config", HTTP_POST, handleConfigSetDoor); //nastaví otvirani dveří
+  server.on("/door/config", HTTP_OPTIONS, handleOptionsDoor);  //option pro dveře
+
 
 
 
@@ -802,13 +974,15 @@ void setup() {
   server.on("/pins", handleGetPinList);            //vypise seznam pinů
 
   //cteni PINu pomoci GET
-  server.on("/pins/5", HTTP_GET, handleGetDigiPin);
+  server.on("/pins/5", HTTP_GET, handleGetDigiPin);             //Garage Door Engine
 
   //nastaveni PINu pomoci POST
-  server.on("/pins/5", HTTP_POST, handleSetDigiPin);
+  server.on("/pins/5", HTTP_POST, handleSetDigiPin);            //Garage Door Engine
 
   //osetreni stavu CORS, pomoci OPTIONS
-  server.on("/pins/5", HTTP_OPTIONS, handleOptionsDigiPin);
+  server.on("/pins/5", HTTP_OPTIONS, handleOptionsDigiPin);     //Garage Door Engine
+
+
 
  //cteni konfigurace jednotlivých PINu pomoci GET
   server.on("/pins/0/config", HTTP_GET, handleGetConfigPin);
@@ -816,9 +990,9 @@ void setup() {
   server.on("/pins/2/config", HTTP_GET, handleGetConfigPin);
   server.on("/pins/3/config", HTTP_GET, handleGetConfigPin);
   server.on("/pins/4/config", HTTP_GET, handleGetConfigPin);
-  server.on("/pins/5/config", HTTP_GET, handleGetConfigPin);
-  server.on("/pins/6/config", HTTP_GET, handleGetConfigPin);
-  server.on("/pins/7/config", HTTP_GET, handleGetConfigPin);
+  server.on("/pins/5/config", HTTP_GET, handleGetConfigPin);    //Garage Door Engine
+  //server.on("/pins/6/config", HTTP_GET, handleGetConfigPin);    //Garage Door
+  //server.on("/pins/7/config", HTTP_GET, handleGetConfigPin);    //Garage Door
   server.on("/pins/8/config", HTTP_GET, handleGetConfigPin);
 
 
@@ -828,9 +1002,9 @@ void setup() {
   server.on("/pins/2/config", HTTP_POST, handleConfigPin);
   server.on("/pins/3/config", HTTP_POST, handleConfigPin);
   server.on("/pins/4/config", HTTP_POST, handleConfigPin);
-  server.on("/pins/5/config", HTTP_POST, handleConfigPin);
-  server.on("/pins/6/config", HTTP_POST, handleConfigPin);
-  server.on("/pins/7/config", HTTP_POST, handleConfigPin);
+  server.on("/pins/5/config", HTTP_POST, handleConfigPin);    //Garage Door Engine
+  //server.on("/pins/6/config", HTTP_POST, handleConfigPin);  //Garage Door
+  //server.on("/pins/7/config", HTTP_POST, handleConfigPin);  //Garage Door
   server.on("/pins/8/config", HTTP_POST, handleConfigPin);
 
   //osetreni stavu CORS, pomoci OPTIONS
@@ -839,9 +1013,9 @@ void setup() {
   server.on("/pins/2/config", HTTP_OPTIONS, handleOptionsPin);
   server.on("/pins/3/config", HTTP_OPTIONS, handleOptionsPin);
   server.on("/pins/4/config", HTTP_OPTIONS, handleOptionsPin);
-  server.on("/pins/5/config", HTTP_OPTIONS, handleOptionsPin);
-  server.on("/pins/6/config", HTTP_OPTIONS, handleOptionsPin);
-  server.on("/pins/7/config", HTTP_OPTIONS, handleOptionsPin);
+  server.on("/pins/5/config", HTTP_OPTIONS, handleOptionsPin);  //Garage Door Engine
+  //server.on("/pins/6/config", HTTP_OPTIONS, handleOptionsPin);  //Garage Door
+  //server.on("/pins/7/config", HTTP_OPTIONS, handleOptionsPin);
   server.on("/pins/8/config", HTTP_OPTIONS, handleOptionsPin);
 
 
@@ -859,39 +1033,18 @@ void setup() {
 
 void loop() {
 
-  /*
-//  pocitani počtu kmitů pře senzorem
-  if (sonar.ping_cm() < 50 ) {
-    pocet++;
-    Serial.print(pocet);
-    Serial.println(" pocet ks");
-  }
-  */
 
  
- // - zobrazuje vzdálenost do konzoly
-
-  
-  delay(500);                     // Wait 50ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
-  Serial.print("Ping: ");
-  Serial.print(sonar.ping_cm()); // Send ping, get distance in cm and print result (0 = outside set distance range)
-  Serial.print("cm  ");
-  Serial.print("   ");
-  Serial.print( (sonar.ping_cm() - DoorMinCm)*100 / doorLenght ); // Send ping, get distance in cm and print result (0 = outside set distance range)
-  Serial.print(" %  ");
-  Serial.print("   ");
-  Serial.print(sonar.ping()); // Send ping, get distance in cm and print result (0 = outside set distance range)
-  Serial.print(" TIME  ");
-  Serial.print(doorIsMoving);
-  Serial.print(" ");
+ //  GARAGE Door Position
+  arduinoTime = millis();         // get Arduino real time
+  if (arduinoTime > doorMeasureTimeTemp + doorMeasureTimeDelay) {         //read GarageDoorPosition every: doorMeasureTimeDelay
+    myGaradeDoor();                                                       //run Garage Door Manager :-)
+    doorMeasureTimeTemp = arduinoTime;
+  }
 
 
 
-  myGaradeDoor();
-  
-
-
-  //sleduje HTTP požadavky GET a POST
+  //listening on HTTP  for GET & POST
   server.handleClient();
 
   
