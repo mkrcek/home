@@ -17,4 +17,4 @@
 wifi_config.h
 
 # temp HomeKit files and folder
-/go-land/garage-door-opener/db3/*
+/go-lang/garage-door-opener/db3/*
