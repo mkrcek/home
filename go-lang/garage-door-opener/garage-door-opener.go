@@ -181,7 +181,7 @@ func deviceDoorSet (targetDoorState int) error { //send HTTP POST To Arduino wit
 
 func main() {
 
-	//get Arduino IP adresss from command-line Argument in this format
+	//set Arduino IP adresss from command-line Argument in this format
 	//e.g. MY-PROGRAM-NAME.GO -ip=http://129.12.1.0
 	//if it is not setup in command-line, default adress is used: defined in var : arduinoURL
 	wordPtr := flag.String("ip", arduinoURL, "a string")
