@@ -59,7 +59,9 @@ Check the setup / configuration with HTTP GET 192.168.100.22/door/config and you
 Super Easy, just to call HTTP GET 192.168.100.22/door
 and you get message like: 
 {"door":0,"CurrentDoorState":1,"TargetDoorState":1,"TargetDoorOpen":100,"ObstructionDetected":false}
+
 where
+
  - door : is the doorPosition in percentage. 0 is close, 100 is open 100%
  - CurrentDoorState: Actual activity of the door like Open = 0; Closed = 1; Opening = 2; Closing = 3; Stopped = 4;
  - TargetDoorState: Target position of the door like Open = 0; Closed = 1;
@@ -71,6 +73,7 @@ where
 Super Easy too :-) Send HTTP POST to 192.168.100.22/door
 with message : 
 {"TargetDoorState":1,"TargetDoorOpen":0}
+
 where
  - TargetDoorState: Target position of the door like Open = 0; Closed = 1;
  - TargetDoorOpen: Target position in percentage (not implemented yet) like Open 40 %
