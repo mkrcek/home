@@ -5,7 +5,8 @@ Mobile Client: iOS HomeKit is an implementation of the HomeKit Accessory Protoco
 Arduino for end-devices.
 
 
-#Garage
+Garage
+----
 
 Usecase: 
 - I want to use iPhone to open and close my Garage Door 
@@ -18,12 +19,14 @@ What do I need:
 - Garage Door :-)
 
 **Garage Door**
+
 I was thinking how to measure the distance the best way. So, this is my result: measure distance on the top-rail.
 
 1) Arduino with Ultrasonic Sensor on the Garage engine. The direction is toward to the Door - so, it is not move.
 2) Put/Attache a little "paper board" on the Door Holder on the rail. When Door is opened, Paper board is close to Arduino (miximun distance), when the door is closed, Paper board is on the other side (maximum distance). 
 
 **Arduino**
+
 1) Arduino: WiFi D1 R2 ESP 8266
 2) Relay: to switch (press) the Garage Door engine
 
