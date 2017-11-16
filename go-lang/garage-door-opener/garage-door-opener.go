@@ -27,6 +27,7 @@ import (
 
 var arduinoURL string = "http://192.168.100.201"		//default - you can change it with command-line Argument - see main()
 
+
 const (			//GaradeDoor params
 
 	PositionStateDecreasing int = 0
@@ -55,6 +56,12 @@ var myGarageDoorDevices doorType			//actual information frem device
 //homekit Declaration
 var myGarage *accessory.GarageDoormetr
 var garageInfo accessory.Info
+
+
+var pairingCode string = "32344322"
+var pairingPort string = "12345"
+var pairingStoragePath string = "./db3"
+
 
 
 func handleRootDevice(w http.ResponseWriter, req *http.Request) {
@@ -102,6 +109,8 @@ func deviceDoorGet()  {		//Get information about Garage Door to global variable
 	if err != nil { //if URL doe's not exist, eg. Arduino is off, error is : Get http://esp8266m.local/: dial tcp: lookup issssdnes.cz: no such host
 		fmt.Printf("----error chyba--\n")
 		fmt.Printf("%s\n", err)
+		fmt.Println("maybe your IP address is without >> http:// <<")
+
 		//os.Exit(1)
 	} else {
 		defer response.Body.Close()
@@ -185,9 +194,27 @@ func main() {
 	//e.g. MY-PROGRAM-NAME.GO -ip=http://129.12.1.0
 	//if it is not setup in command-line, default adress is used: defined in var : arduinoURL
 	wordPtr := flag.String("ip", arduinoURL, "a string")
+	wordPtrCode := flag.String("pin", pairingCode, "a string")
+	wordPtrPort := flag.String("port", pairingPort, "a string")
+	wordPtrPath := flag.String("path", pairingStoragePath, "a string")
+
 	flag.Parse()
 	fmt.Println("Arduino IP adress is :", *wordPtr)
 	arduinoURL = *wordPtr		//new IP address for ARDUINO
+
+
+	//flag.Parse()
+	fmt.Println("HomeKit pairing Code (pin) is :", *wordPtrCode)
+	pairingCode = *wordPtrCode		//new pairing HomeKit Code
+
+
+	//flag.Parse()
+	fmt.Println("HomeKit Port is :", *wordPtrPort)
+	pairingPort = *wordPtrPort		//new HomeKit Port
+
+	//flag.Parse()
+	fmt.Println("HomeKit Path is :", *wordPtrPath)
+	pairingStoragePath = *wordPtrPath		//new HomeKit Path
 
 
 	//setup the HomeKit button
@@ -201,7 +228,9 @@ func main() {
 	myGarage = accessory.NewGarageDoorSensor(garageInfo, CurrentDoorStateClosed,TargetDoorStateClosed, false)
 		//starting params
 
-	config := hc.Config{Pin: "32344322", Port: "12345", StoragePath: "./db3"}
+
+	//fmt.Println("HomeKit Pairing Code is " + pairingCode)
+	config := hc.Config{Pin: pairingCode, Port: pairingPort, StoragePath: pairingStoragePath}
 		//***** PIN must be unique for every HomeKitBridge, Storapath is forder for config&temp files
 
 	transportHK, err := hc.NewIPTransport(config, myGarage.Accessory)
@@ -263,7 +292,8 @@ func main() {
 	mux.HandleFunc("/", handleRootDevice)
 
 	s := &http.Server{
-		Addr:    ":9090", //TCP address to listen on: maybe localhost:4321
+		Addr:    ":9091", //TCP address to listen on: maybe localhost:4321
+		//zdá se, že musí být jiný - než jiný server - pak se to nekonfliktuje?
 		Handler: mux,
 	}
 	// Run server in new goroutine
@@ -279,3 +309,17 @@ func main() {
 	transportHK.Start()
 	// ******************** Run HomeKit	*** END
 }
+
+//Cross compile with Go 1.5 forls
+
+/*
+Raspberry Pi: $ GOOS=linux GOARCH=arm GOARM=6 go build -v garage-door-opener.go
+//5 & 6 works on Raspberian : Raspberry Pi Zero W
+Windows:      $ GOOS=windows GOARCH=386 go build -v garage-door-opener.exe garage-door-opener.go   //??
+Windows10: 	$ GOOS=windows GOARCH=amd64 go build -v garage-door-opener-64.exe garage-door-opener.go
+
+On RPi - maybe you need to change the right of the file
+$ chmod +x garage-door-opener
+
+and run $ sudo ./garage-door-opener
+*/
