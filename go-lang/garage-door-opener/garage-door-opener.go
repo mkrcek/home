@@ -58,9 +58,10 @@ var myGarage *accessory.GarageDoormetr
 var garageInfo accessory.Info
 
 
-var pairingCode string = "32344322"
-var pairingPort string = "12345"
-var pairingStoragePath string = "./db3"
+var pairingCode string = "32344323"
+var pairingPort string = "12343"
+var pairingStoragePath string = "./dbgarage"
+var serverPort = ":9090"
 
 
 
@@ -189,7 +190,11 @@ func deviceDoorSet (targetDoorState int) error { //send HTTP POST To Arduino wit
 //The main CODE
 
 func main() {
-
+	fmt.Println("Garage Door Opener by HTTP GET & POgit" +
+		"ST + Apple HOMEKIT")
+	fmt.Println("  server  ")
+	fmt.Println("you can use arguments like -ip=http://129.12.1.0 -pin=32344323 -port=12343 -path=./dbroom -serverport=.9090")
+	fmt.Println("  ...  ")
 	//set Arduino IP adresss from command-line Argument in this format
 	//e.g. MY-PROGRAM-NAME.GO -ip=http://129.12.1.0
 	//if it is not setup in command-line, default adress is used: defined in var : arduinoURL
@@ -197,24 +202,26 @@ func main() {
 	wordPtrCode := flag.String("pin", pairingCode, "a string")
 	wordPtrPort := flag.String("port", pairingPort, "a string")
 	wordPtrPath := flag.String("path", pairingStoragePath, "a string")
+	wordPtrServerPort := flag.String("serverport", serverPort, "a string")
+
 
 	flag.Parse()
 	fmt.Println("Arduino IP adress is :", *wordPtr)
 	arduinoURL = *wordPtr		//new IP address for ARDUINO
 
 
-	//flag.Parse()
 	fmt.Println("HomeKit pairing Code (pin) is :", *wordPtrCode)
 	pairingCode = *wordPtrCode		//new pairing HomeKit Code
 
 
-	//flag.Parse()
 	fmt.Println("HomeKit Port is :", *wordPtrPort)
 	pairingPort = *wordPtrPort		//new HomeKit Port
 
-	//flag.Parse()
 	fmt.Println("HomeKit Path is :", *wordPtrPath)
 	pairingStoragePath = *wordPtrPath		//new HomeKit Path
+
+	fmt.Println("HomeKit Server Port is :", *wordPtrServerPort)
+	serverPort = *wordPtrServerPort		//new HomeKitServer Port
 
 
 	//setup the HomeKit button
@@ -292,7 +299,7 @@ func main() {
 	mux.HandleFunc("/", handleRootDevice)
 
 	s := &http.Server{
-		Addr:    ":9091", //TCP address to listen on: maybe localhost:4321
+		Addr:    serverPort, //TCP address to listen on: maybe localhost:4321
 		//zdá se, že musí být jiný - než jiný server - pak se to nekonfliktuje?
 		Handler: mux,
 	}
@@ -310,7 +317,7 @@ func main() {
 	// ******************** Run HomeKit	*** END
 }
 
-//Cross compile with Go 1.5 forls
+//Cross compile with Go 1.5 for
 
 /*
 Raspberry Pi: $ GOOS=linux GOARCH=arm GOARM=6 go build -v garage-door-opener.go
@@ -318,8 +325,12 @@ Raspberry Pi: $ GOOS=linux GOARCH=arm GOARM=6 go build -v garage-door-opener.go
 Windows:      $ GOOS=windows GOARCH=386 go build -v garage-door-opener.exe garage-door-opener.go   //??
 Windows10: 	$ GOOS=windows GOARCH=amd64 go build -v garage-door-opener-64.exe garage-door-opener.go
 
-On RPi - maybe you need to change the right of the file
-$ chmod +x garage-door-opener
+-v:
+  print the names of packages as they are compiled.
 
-and run $ sudo ./garage-door-opener
+On RPi - maybe you need to change the right of the file
+	$ chmod +x garage-door-opener
+
+and run program
+	$ sudo ./garage-door-opener
 */

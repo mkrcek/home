@@ -56,7 +56,7 @@ int clickHoldEndPin[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1};  //tlacitko-Pust�
 
 String deviceSwVersion = "2017-11-14";
 String deviceBoard = "RobotDyn Wifi D1R2";
-char* deviceId = "esp8266garage";
+char deviceId[] = "esp8266garage";
 String deviceName = "GarageController";
 String deviceLocation = "Garage";
 
@@ -74,7 +74,10 @@ String deviceLocation = "Garage";
 #include "wifi_config.h"   
 const char* ssid = ssid_config; 
 const char* password = pws_config;
-const char* targetServer = target_Server;   //server IP address - where he is listening
+
+//changable via HTTP POST to 192.168.0.44/device {"targetServer":"192.168.110.117","httpPort":9091}
+char targetServer[] = target_Server;    //server IP address - where he is listening
+ int httpPort = target_Server_Port;     //and port to listen to
   
 
 
@@ -138,7 +141,7 @@ ESP8266WebServer server(80);
 
 int newAverageDoorPosition (int p) {      //get new average position & diretion from history of measurements
     int historyLength = 5;   //max 10 size of array
-    Serial.print("history: ");
+//    Serial.print("history: ");
     float avrg = 0.0;       //to get the right numbers 
     float avDir = 0.0;
     
@@ -147,10 +150,10 @@ int newAverageDoorPosition (int p) {      //get new average position & diretion
       historyDoorDirection[i] = historyDoorDirection [i+1];
       avrg = avrg + historyDoorPosition[i];
       avDir = avDir + historyDoorDirection[i];
-      Serial.print(historyDoorPosition[i]);
-      Serial.print("/");
-      Serial.print(historyDoorDirection[i]);
-      Serial.print(",");
+//      Serial.print(historyDoorPosition[i]);
+//      Serial.print("/");
+//      Serial.print(historyDoorDirection[i]);
+//      Serial.print(",");
     }
     
     if (historyDoorPosition[(historyLength-1)] > p) { 
@@ -164,22 +167,22 @@ int newAverageDoorPosition (int p) {      //get new average position & diretion
     }
     
     historyDoorPosition[(historyLength-1)] = p;
-    Serial.print(historyDoorPosition[(historyLength-1)]);
-    Serial.print("/");
-    Serial.print(historyDoorDirection[(historyLength-1)]);
-    Serial.print(" = ");
+//    Serial.print(historyDoorPosition[(historyLength-1)]);
+//    Serial.print("/");
+//    Serial.print(historyDoorDirection[(historyLength-1)]);
+//    Serial.print(" = ");
     avrg = avrg + historyDoorPosition[(historyLength-1)];
     avrg = avrg / historyLength;
     avrg = round(avrg);                   // and round it
-    Serial.print(avrg);
-    Serial.print(" // ");
+//    Serial.print(avrg);
+//    Serial.print(" // ");
     
     avDir = avDir + historyDoorDirection[(historyLength-1)];
     avDir = avDir / historyLength;
     avDir = round (avDir);
     averageDoorDirection = avDir;  
-    Serial.print(avDir);
-    Serial.print(" // ");
+//    Serial.print(avDir);
+//    Serial.print(" // ");
        
     return (int) avrg;    //
 }
@@ -197,17 +200,17 @@ void myGaradeDoor() {     //manager for garame-door-opener
   doorPosition = 100 - doorPosition; //revert the orientation. (the shortest distance = garage is open) 
 
 
-  Serial.print("real: ");
-  Serial.print( realDoorPosition ); // real door position in cm
-  Serial.print("cm, ");
-  Serial.print( doorPosition ); // door position in %
-  Serial.print(" %, ");
-  if (doorIsMoving) { 
-      Serial.print("door-is-moving"); 
-    } else { 
-      Serial.print("door-is-NOT-moving"); 
-  }
-  
+//  Serial.print("real: ");
+//  Serial.print( realDoorPosition ); // real door position in cm
+//  Serial.print("cm, ");
+//  Serial.print( doorPosition ); // door position in %
+//  Serial.print(" %, ");
+//  if (doorIsMoving) { 
+//      Serial.print("door-is-moving"); 
+//    } else { 
+//      Serial.print("door-is-NOT-moving"); 
+//  }
+//  
 
 //new request to MOVE the door?  
   if (changeDoorState == true) { 
@@ -216,9 +219,9 @@ void myGaradeDoor() {     //manager for garame-door-opener
        changeDoorState = false;
      } else {                                      //if door is NOT in target position = start motor
        TargetDoorState = NewTargetDoorState;
-       Serial.println("");
-       Serial.println("RUN THE ENGINE / MOTOR - Wrrrrrrw");
-       Serial.println("");
+//       Serial.println("");
+//       Serial.println("RUN THE ENGINE / MOTOR - Wrrrrrrw");
+//       Serial.println("");
        PressRelayButton(GARAGE_MOTOR_PIN);
        changeDoorState = false;
        doorIsMoving = true;
@@ -232,7 +235,7 @@ if (doorPosition <= 5) {                        //if the door is CLOSED (+/- 5 %
       CurrentDoorState = CurrentDoorStateClosed;
       ObstructionDetected = false;
       doorPositionLast = doorPosition;
-      Serial.println("....CLOSED");
+//     Serial.println("....CLOSED");
       if ( TargetDoorState == TargetDoorStateClosed ) {
         doorIsMoving = false;
       }
@@ -241,7 +244,7 @@ if (doorPosition <= 5) {                        //if the door is CLOSED (+/- 5 %
       CurrentDoorState = CurrentDoorStateOpen;
       ObstructionDetected = false;
       doorPositionLast = doorPosition;
-      Serial.println("....OPEN");
+//      Serial.println("....OPEN");
       if ( TargetDoorState == TargetDoorStateOpen ) {
           doorIsMoving = false;
         }
@@ -250,25 +253,25 @@ if (doorPosition <= 5) {                        //if the door is CLOSED (+/- 5 %
             CurrentDoorState = CurrentDoorStateOpening;
             ObstructionDetected = false;
             doorPositionLast = doorPosition;
-            Serial.println("....opening UP");
+//            Serial.println("....opening UP");
             }
           if (averageDoorDirection == -1) {
             CurrentDoorState = CurrentDoorStateClosing;
             ObstructionDetected = false;
             doorPositionLast = doorPosition;
-            Serial.println("....closing DOWN");
+//            Serial.println("....closing DOWN");
             }  
           if (averageDoorDirection == 0) {           //if door STOPed
             if (doorPosition == TargetDoorOpen) {
               CurrentDoorState = CurrentDoorStateStopped;
               ObstructionDetected = false;
               doorPositionLast = doorPosition;
-              Serial.println("....Target position");
+//              Serial.println("....Target position");
             } else {
               CurrentDoorState = CurrentDoorStateStopped;
               ObstructionDetected = true;
               doorPositionLast = doorPosition;
-              Serial.println("....Obstruction Detected");
+//              Serial.println("....Obstruction Detected");
             }
           } //end if-STOPed
         }
@@ -566,7 +569,7 @@ void handleGetDevice() {    //informace o zařízení - celé arduino desce
   String mDNS = deviceId;
 
   //==JSON vytvoreni obsahu ==
-  StaticJsonBuffer<250> jsonBuffer;                           //Reserve memory space
+  StaticJsonBuffer<300> jsonBuffer;                           //Reserve memory space
   JsonObject& root = jsonBuffer.createObject();
 
   root["deviceName"] = deviceName;
@@ -579,6 +582,9 @@ void handleGetDevice() {    //informace o zařízení - celé arduino desce
   root["devicemDNS"] = mDNS + ".local" ;
   root["deviceId"] = deviceId;
   root["ssid"] = ssid;
+  root["targetServer"] = targetServer;
+  root["httpPort"] = httpPort;
+  
   //==
 
   //==JSON generuje vystup ==
@@ -638,6 +644,15 @@ void handlePostDevice() {     //nastaví informace o zařízení(desce( podle p�
   //   Retrieve the values
   String deviceNameS         = root["deviceName"];
   String deviceLocationS     = root["deviceLocation"];
+
+//example: HTTP POST {"targetServer":"192.168.110.117","httpPort":9091}
+//  String targetServerS = root["targetServer"] ;
+//  targetServer = targetServerS;
+//  httpPort = root["httpPort"] ;
+  String servername = root["targetServer"] ;
+  servername.toCharArray (targetServer, servername.length()+1);
+  httpPort = root["httpPort"] ;
+  
   //==
 
   if (deviceNameS != "") {
