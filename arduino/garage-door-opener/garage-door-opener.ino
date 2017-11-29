@@ -554,7 +554,6 @@ void handleOptionsDigiPin() {   //korekce pro CORS
   server.send(204);
 }
 
-
 void handleGetDevice() {    //informace o zařízení - celé arduino desce
 
   //nastavení hlavicky

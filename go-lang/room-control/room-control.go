@@ -142,7 +142,7 @@ func handlePins(w http.ResponseWriter, req *http.Request) {
 						//w.WriteHeader(200) -  pokud nenín zakomentované nastane: multiple response.WriteHeader calls
 						return
 					}
-				case 8:		//PIR MOTION
+				case 2:		//PIR MOTION on PIN 2 - PIR morion / Alarm
 					{
 						log.Info.Print("hodnota val")
 						log.Info.Println(post.Value)

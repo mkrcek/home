@@ -966,6 +966,15 @@ void alarmStatus (int pinNumber) { //Alarm: update global array of statute /Alar
 
   */
 
+
+
+//přidat sendPostToServer(při začátku a ukončení alarmu
+//
+//přidat na SERVER - teĎ špatně na port 8
+
+
+  
+
 int alarmValue = digitalRead(digitalPins[pinNumber]);    //info from sensor
 
 if (alarmValue == 1) {  //Signal from Alalrm Sensor is On
@@ -1225,11 +1234,12 @@ void loop(void) {
   button1.tick();
   button2.tick();
 
-
+  //checking for alarm activation - in this case PIR motino
    alarmStatus (2);
    if (alarmStatusValue[2] == AlarmSensorOn1st) {
       Serial.println ("ALARM ON");
-      switchOn(5);
+      switchOn(5);                 //Switch On the light
+      sendPostToServer(2, 1, 0);   //send info to server - Alarm is ON 
    }
    
 //   if (alarmStatusValue[2] == AlarmSensorStoped) {
@@ -1239,7 +1249,8 @@ void loop(void) {
     
    if (alarmStatusValue[2] == AlarmSensorDelayEnd) {
       Serial.println ("DELAY KONEC--");
-      switchOff(5);
+      switchOff(5);                 //Switch OFF the light
+      sendPostToServer(2, 0, 0);   //send info to server - Alarm is OFF 
     }
 }
 
