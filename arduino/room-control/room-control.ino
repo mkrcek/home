@@ -24,6 +24,7 @@ Functionality:
   - analog input (light intensity) xx.xx.xx.xx/analog (GET)
   - active pins PINů: xx.xx.xx.xx/pins (GET)  // :-) need to set up manualy
 
+update 23/12/2017: static IP address
 
 
 //wifi server: http://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/readme.html
@@ -66,6 +67,9 @@ String deviceLocation = "Room";
 #include "wifi_config.h"   
 const char* ssid = ssid_config; 
 const char* password = pws_config;
+IPAddress arduinoIP (192,168,0,70);   //static IP address
+IPAddress gateway(192, 168, 0, 1); // set gateway to match your network
+IPAddress subnet(255, 255, 255, 250); // set subnet mask to match your network
 
 
 //changable via HTTP POST to 192.168.0.44/device {"targetServer":"192.168.110.117","httpPort":9091}
@@ -1096,6 +1100,10 @@ void setup(void) {
   alarmInit(2);
 
   // ******* nastavení a připojení WIFI
+  //Unlike WiFi.begin() which automatically configures the WiFi shield to use DHCP, WiFi.config() allows you to manually set the network address of the shield.
+  //https://www.arduino.cc/en/Reference/WiFiConfig
+  WiFi.config(arduinoIP,gateway, subnet);   
+ 
   WiFi.begin(ssid, password);
   Serial.println("");
   // Wait for connection
