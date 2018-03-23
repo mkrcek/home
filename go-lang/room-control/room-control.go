@@ -87,6 +87,7 @@ func handlePins(w http.ResponseWriter, req *http.Request) {
 		{
 			//nalezení čísla PINS za lomítkem, tedy /pins/1 = 1
 			myURL := req.RequestURI        // req.URL vs req.RequestURI		"/pins/1"
+			fmt.Println("hodnota URL =" + myURL)
 			myURL = myURL[1:]              //odstrani první lomítko -> pins/1 = 1
 			i := strings.Index(myURL, "/") //vrátí poradi prvniho lomítka
 			if i > -1 {
@@ -254,7 +255,7 @@ func deviceReadTempHum(pin int) (float64) {
 	tr := &http.Transport{
 		MaxIdleConns: 10,
 		DialContext: (&net.Dialer{
-			Timeout:   13 * time.Second, //delka trvani timeout, standardně je 30
+			Timeout:   30 * time.Second, //delka trvani timeout, standardně je 30
 			KeepAlive: 30 * time.Second,
 			DualStack: true,
 		}).DialContext,
@@ -634,3 +635,8 @@ On RPi - maybe you need to change the right of the file
 and run program
 	$ sudo ./room-control
 */
+
+
+
+//stačí spusit ...s parametrem
+//go run room-control.go -ip=http://192.168.0.70
