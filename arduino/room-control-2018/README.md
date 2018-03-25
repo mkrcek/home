@@ -72,17 +72,17 @@ pokud je něco špatně, Arduino odpoví hláškou a kódem 400.
 
 pomocí GET
 
-        GET http://xx.xx.xx.xx/0 …. vypne svetlo 1
-        GET http://xx.xx.xx.xx/1 …. zapne svetlo 1
-        GET http://xx.xx.xx.xx/2 …. vypne svetlo 2
-        GET http://xx.xx.xx.xx/3 …. zapne svetlo 2
+        GET http://xx.xx.xx.xx/0      vypne svetlo 1
+        GET http://xx.xx.xx.xx/1      zapne svetlo 1
+        GET http://xx.xx.xx.xx/2      vypne svetlo 2
+        GET http://xx.xx.xx.xx/3      zapne svetlo 2
 
 nebo pomocí POST :-)
 
-        POST http://xx.xx.xx.xx/pins/5 {“value”:0, “pwm”:0}  … vypne svetlo 1
-        POST http://xx.xx.xx.xx/pins/5 {“value”:1, “pwm”:0}  … zapne svetlo 1
-        POST http://xx.xx.xx.xx/pins/6 {“value”:0, “pwm”:0}  … vypne svetlo 2
-        POST http://xx.xx.xx.xx/pins/6 {“value”:1, “pwm”:0}  … vypne svetlo 2
+        POST http://xx.xx.xx.xx/pins/5 {“value”:0, “pwm”:0}     vypne svetlo 1
+        POST http://xx.xx.xx.xx/pins/5 {“value”:1, “pwm”:0}     zapne svetlo 1
+        POST http://xx.xx.xx.xx/pins/6 {“value”:0, “pwm”:0}     vypne svetlo 2
+        POST http://xx.xx.xx.xx/pins/6 {“value”:1, “pwm”:0}     vypne svetlo 2
 
 
 -----
@@ -93,18 +93,28 @@ Arduino při události stisku tlačítka nebo PIR odesílá POST na server
 
 - stisknut vypínač číslo 1
 
+
     POST URL je: /pins/5       (kde 5 je vypínač číslo 1)
 
+
 JSON:
+
+
     {“value”:0, “pwm”:0}   
+
 
 kde value=0 - vypnuto, 1=zapnuto
 
 - stisknut vypínač číslo 2
+
+
     POST URL je: /pins/6       (kde 6 je vypínač číslo 2)
 
+
 JSON:
+
     {“value”:0, “pwm”:0}
+
 
 kde value=0 - vypnuto, 1=zapnuto
 
