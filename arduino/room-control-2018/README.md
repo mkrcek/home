@@ -31,6 +31,50 @@ Room Control by HTTP GET & POST + Apple HOMEKIT
 PINy D0, D1, D8 jsou nevyužity z důvodu nefunkčnosti připojení na teploměr
 
 
+
+## Konfigurace PIR
+Připojené k Arduinu jen (JEDNO) 1x PIR čidlo. SW umožňuje  připojit ještě druhé PIR čidlo na D1. Zatím netestováno.
+
+PIR senzor se konfiguruje na 2 funkce
+1. které relé má spínat
+2. kdy má spínat a jaký je stav
+
+je nastaveno na spínaní LOW (tedy nulou) -MM__________
+
+
+### 2. stav PIR
+- konfigurace v array: relayOnHighPins
+- informace poskytuje funkce handleGetPir()
+- je možné zjistit vzdáleně pomocí GET (jiné URL s /pirs/2  !!)
+
+        GET xx.xx.xx.xx/pirs/2
+
+a dostanu JSON
+
+        {
+            "interval": 3000,           //doba sepnutí v milisec
+            "starttime": 0,             //začátek alarmu
+            "currenttime": 2158656,     //současný cas arduina
+            "motion": 2                 //stav alarmu - viz MOTION: Stav PIR čidla
+        }
+
+- konfigurace /nastavení/ RELÉ je možná pomocí POST, na funkci handleSetPir()    (jiné URL s /pirs/2  !!)
+
+
+      POST xx.xx.xx.xx/pirs/2
+
+
+a odeslaním JSON s požadovanou změnou na délku sepnutí
+
+            {
+                "interval": 3000           //doba sepnutí v milisec
+            }
+
+
+pozn. Před odeslání JSON smazat vše s //
+
+--------
+
 ## Konfigurace Tlačítko
 
 Připojené jsou 2 tlačítka. Pro více tlačítek je nutná změna kodu. Tlačítka jsou nastavena takto:
@@ -79,6 +123,7 @@ a odeslaním JSON s požadovanou změnou.
               "buttonHoldEnd": -1       //
         }
 
+pozn. Před odeslání JSON smazat vše s //
 ------
 
 ## Konfigurace Relé
@@ -126,22 +171,7 @@ a odeslaním JSON s požadovanou změnou.
         }
 
 
-KONEc
-
-        {
-            "name": "vypÃ­naÄ okolÃ­",
-            "location": "",
-            "digitalWrite": false,
-            "relayOnHigh": true,
-            "inUse": true,
-            "buttonClick": 6,
-            "buttonDoubleClick": 6,
-            "buttonHoldStart": 6,
-            "buttonHold": -1,
-            "buttonHoldEnd": -1
-        }
-
-
+pozn. Před odeslání JSON smazat vše s //
 
 --------
 
