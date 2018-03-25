@@ -91,10 +91,10 @@ nebo pomocí POST :-)
 
 Arduino při události stisku tlačítka nebo PIR odesílá POST na server
 
-- stisknut vypínač číslo 1
+Stisknut vypínač číslo 1:
 
 
-    POST URL je: /pins/5       (kde 5 je vypínač číslo 1)
+      POST URL je: /pins/5       (kde 5 je vypínač číslo 1)
 
 
 JSON:
@@ -105,10 +105,11 @@ JSON:
 
 kde value=0 - vypnuto, 1=zapnuto
 
-- stisknut vypínač číslo 2
+- stisknut vypínač číslo 2:
 
 
-    POST URL je: /pins/6       (kde 6 je vypínač číslo 2)
+
+      POST URL je: /pins/6       (kde 6 je vypínač číslo 2)
 
 
 JSON:
@@ -118,11 +119,15 @@ JSON:
 
 kde value=0 - vypnuto, 1=zapnuto
 
-- pohyb na PIR
+Pohyb na PIR:
 
-    POST URL je: /pins/2       (kde 2 je PIR čidlo)
+
+      POST URL je: /pins/2       (kde 2 je PIR čidlo)
+
 
 JSON:
-    {“value”:0, “pwm”:0}   
+
+      {“value”:0, “pwm”:0}   
+
 
 kde value=0-5 (viz MOTION: Stav PIR čidla)
