@@ -30,13 +30,65 @@ Room Control by HTTP GET & POST + Apple HOMEKIT
 
 PINy D0, D1, D8 jsou nevyužity z důvodu nefunkčnosti připojení na teploměr
 
-## Relé
+
+## Konfigurace Tlačítko
+
+Připojené jsou 2 tlačítka. Pro více tlačítek je nutná změna kodu. Tlačítka jsou nastavena takto:
+
+Tlačítko 1:
+- 1 x klik: změní stav na PINu 5 (RELÉ1 / SVĚTLO 1) - Array clickPin
+- 2 x klik: změní stav na PINu 6 (RELÉ2 / SVĚTLO 2) - Array click2Pin
+- Dlouze se podrží: vypne se PINu 5+6 (RELÉ1+2 / SVĚTLO 1+2) - Array clickHoldStartPin
+- je možné zjistit vzdáleně pomocí GET
+
+        GET xx.xx.xx.xx/pins/3/config
+        GET xx.xx.xx.xx/pins/4/config
+
+a dostanu JSON
+
+        {
+              "name": "Tlacitko-1",
+              "location": "",
+              "digitalWrite": false,    // vstupní PIN
+              "relayOnHigh": true,      
+              "inUse": true,
+              "buttonClick": 5,         //1x klik přepne na PIN5
+              "buttonDoubleClick": 6,   //2x klik přepne na PIN6
+              "buttonHoldStart": 5,     //podrží vypne oba 5+6, neměnit - !
+              "buttonHold": -1,         //
+              "buttonHoldEnd": -1       //
+        }
+
+- konfigurace /nastavení/ Tlačítka je možná pomocí POST, na funkci handleConfigPin()
+
+      POST xx.xx.xx.xx/pins/3/config
+      POST xx.xx.xx.xx/pins/4/config
+
+a odeslaním JSON s požadovanou změnou.
+
+        {
+              "name": "Tlacitko-1",
+              "location": "",
+              "digitalWrite": false,    // vstupní PIN
+              "relayOnHigh": true,      
+              "inUse": true,
+              "buttonClick": 5,         //1x klik přepne na PIN5
+              "buttonDoubleClick": 6,   //2x klik přepne na PIN6
+              "buttonHoldStart": 5,     //podrží vypne oba 5+6, neměnit - !
+              "buttonHold": -1,         //
+              "buttonHoldEnd": -1       //
+        }
+
+------
+
+## Konfigurace Relé
 Připojené relé je nastaveno na spínaní LOW (tedy nulou)
 - konfigurace v array: relayOnHighPins
 - informace poskytuje funkce handleGetConfigPin()
-- je možné měnit vzdáleně pomocí GET
+- je možné zjistit vzdáleně pomocí GET
 
         GET xx.xx.xx.xx/pins/5/config
+        GET xx.xx.xx.xx/pins/6/config
 
 a dostanu JSON
 
@@ -53,9 +105,10 @@ a dostanu JSON
               "buttonHoldEnd": -1
         }
 
-- konfigurace /nastavení/ RELÉ je možná pomocí POST
+- konfigurace /nastavení/ RELÉ je možná pomocí POST, na funkci handleConfigPin()
 
       POST xx.xx.xx.xx/pins/5/config
+      POST xx.xx.xx.xx/pins/6/config
 
 a odeslaním JSON s požadovanou změnou.
 

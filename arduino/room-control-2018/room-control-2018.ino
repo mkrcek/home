@@ -87,7 +87,7 @@ int analogPins[] = {0};
 //              PIN:{ 0, 1, 2, 3, 4,  5,  6,  7,  8 }    | PIN cislo [5] = LED modrá na boardu
 int digitalPins[] = {16, 5, 4, 0, 2, 14, 12, 13, 15};   //mapování PINů pro RobotDyn Wifi D1R2: https://www.wemos.cc/product/d1.html
 int pwmPins[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1};  //uložení hodnoty pwm, když je (-1), tak není pwm nastaveno
-String namePins[] = { "teplota a vlhkost", "", "vnitřní PIR modul", "vypínač bouda", "vypínač okolí", "světlo bouda", "světlo okolí", "", ""};  //popis
+String namePins[] = { "NaN", "NaN", "PIR", "Tlacitko-1", "Tlacitko-1", "svetlo-1", "svetlo-2", "Teplota DS", "NaN"};  //popis
 String locationPins[] = { "", "", "", "", "", "", "", "", ""};        //popis umístění
 bool digitalWritePins[] = { false, false, false, false, false, true, true, true, false};   //piny 5, 6, 7, (8) jsou vystupní
 bool relayOnHighPins[] = { true, true, true, true, true, false, true, true, true}; //čím se sepne relé true = HIGH
@@ -95,6 +95,7 @@ bool inusePin[] = { true, false, true, true, true, true, true, false, true};    
 int clickPin[] = { -1, -1, -1, 5, 6, -1, -1, -1, -1};  //tlacitko-click se přepne uvedený PIN. -1 je nenastaveno
 int click2Pin[] = { -1, -1, -1, 6, 6, -1, -1, -1, -1};  //tlacitko-double click se přepne uvedený PIN. -1 je nenastaveno
 int clickHoldStartPin[] = { -1, -1, 5, 5, 6, -1, -1, -1, -1};  //tlacitko-Začne držet ... se přepne uvedený PIN. -1 je nenastaveno
+//nastaveno, že vypne PIN 5+6 ... viz funkce longPressStart1()
 int clickHoldDoPin[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1};  //tlacitko-Drží se ....se přepne uvedený PIN. -1 je nenastaveno
 int clickHoldEndPin[] = { -1, -1, 5, -1, -1, -1, -1, -1, -1};  //tlacitko-Pustí držení .... se přepne uvedený PIN. -1 je nenastaveno
 
