@@ -76,12 +76,6 @@ pomocí GET
         GET http://xx.xx.xx.xx/2      vypne svetlo 2
         GET http://xx.xx.xx.xx/3      zapne svetlo 2
 
-nebo pomocí POST :-)
-
-        POST http://xx.xx.xx.xx/pins/5 {“value”:0, “pwm”:0}     vypne svetlo 1
-        POST http://xx.xx.xx.xx/pins/5 {“value”:1, “pwm”:0}     zapne svetlo 1
-        POST http://xx.xx.xx.xx/pins/6 {“value”:0, “pwm”:0}     vypne svetlo 2
-        POST http://xx.xx.xx.xx/pins/6 {“value”:1, “pwm”:0}     vypne svetlo 2
 
 Kompletní API níže:
 -----
