@@ -2,6 +2,9 @@
 
 Room Control by HTTP GET & POST + Apple HOMEKIT
 - Arduino Board: **ESP WeMos D1R2**
+- konfigurace Doomaster
+- kompletní konfigurace jednotlivých PINů a senzorů
+- konfigurace ARDUINA - jako celku + IP adresy
 
 ----------
 
@@ -78,9 +81,8 @@ pomocí GET
 
 
 Kompletní API níže:
------
 
-#REST API
+
 ## POST z Arduina na server
 
 Arduino při události stisku tlačítka nebo PIR odesílá POST na server
@@ -160,7 +162,7 @@ Připojené k Arduinu jen (JEDNO) 1x PIR čidlo. SW umožňuje  připojit ješt�
 Default konfigurace
 - na PIN D2 je připojen LOW= zaalarmovano. Přerušením, tedy sepnutím PIR čidla, se aktivuje alarm.
 - sepne se Relé/Světlo 1
-- po ukončení posledního pohybu spustí stopky na 3sec (znovu PIN je na LOW)
+- po ukončení posledního pohybu spustí odpočítávání na 3sec (znovu PIN je na LOW)
 - teprve potom ukončí Alarm
 - kažý stav reportuje pomocí POST na server
 
@@ -168,7 +170,8 @@ PIR senzor se konfiguruje na 2 funkce
 1. co/které PIN/relé se má spínat
 2. kdy se má spínat a jaký je stav čidla
 
-je nastaveno na spínaní LOW (tedy nulou) -MM__________
+
+
 
 ### 1. co spínat
 
@@ -303,6 +306,40 @@ pozn. Před odeslání JSON smazat vše s //
 ------
 
 ## Konfigurace Relé
+
+Relé mohu ovládat a konfigurovat
+
+### informace o stavu a nastavení
+
+- je možné zjistit vzdáleně pomocí GET (funkce handleGetDigiPin())
+
+        GET xx.xx.xx.xx/pins/5
+        GET xx.xx.xx.xx/pins/6
+
+a dostanu JSON
+
+      {
+          "value": 0
+      }
+
+- a nastavení pomocí POST a funkce handleSetDigiPin()
+
+        POST xx.xx.xx.xx/pins/5
+        POST xx.xx.xx.xx/pins/6
+
+a odeslaním JSON s požadovanou změnou.
+
+        {
+            "value": 0,
+            "pwm":0           //nepoužívá se, jen pro LED  intenzitu
+        }
+
+
+
+------
+
+
+### konfigurace
 Připojené relé je nastaveno na spínaní LOW (tedy nulou)
 - konfigurace v array: relayOnHighPins
 - informace poskytuje funkce handleGetConfigPin()
@@ -373,6 +410,47 @@ a dostanu JSON
                 "deviceTemperature": -12700,
                 "actmillis": 4946253,
                 "TempTime": 4946253
+                "TempTime": 4946253
           }
 
 - konfigurace není
+
+-------
+
+# konfigurace celého ARDUINA
+
+
+Informace o Arduinu je možné získat na
+
+
+        GET xx.xx.xx.xx/device
+
+a dostanu JSON
+
+        {
+              "deviceName": "RoomMan",
+              "deviceLocation": "Room",
+              "deviceSwVersion": "2018-03-23",
+              "deviceBoard": "RobotDyn Wifi D1R2",
+              "deviceIP": "xx.xx.xx.xx",            //IP adresa arduina
+              "ssid": "xxxxx",                      //ssid na které je připojeno arduino
+              "targetServer": "yy.yy.yy.yy",        //IP adresa sertovacího serveru
+              "httpPort": xxxxx                   //port reportovacího serveru
+        }
+
+
+- konfigurace /nastavení/ DEVICE je možná pomocí POST, na funkci handlePostDevice()
+
+      POST xx.xx.xx.xx/device
+
+a odeslaním JSON s požadovanou změnou. Pouze tyto položky je možné měnit:
+
+        {
+              "deviceName": "RoomMan",
+              "deviceLocation": "Room",
+              "targetServer": "yy.yy.yy.yy",        //IP adresa sertovacího serveru
+              "httpPort": xxxxx                   //port reportovacího serveru
+        }
+
+
+pozn. Před odeslání JSON smazat vše s //

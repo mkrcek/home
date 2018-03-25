@@ -95,7 +95,7 @@ bool inusePin[] = { true, false, true, true, true, true, true, false, true};    
 int clickPin[] = { -1, -1, -1, 5, 6, -1, -1, -1, -1};  //tlacitko-click se přepne uvedený PIN. -1 je nenastaveno
 int click2Pin[] = { -1, -1, -1, 6, 6, -1, -1, -1, -1};  //tlacitko-double click se přepne uvedený PIN. -1 je nenastaveno
 int clickHoldStartPin[] = { -1, -1, 5, 5, 6, -1, -1, -1, -1};  //tlacitko-Začne držet ... se přepne uvedený PIN. -1 je nenastaveno
-//nastaveno, že vypne PIN 5+6 ... viz funkce longPressStart1()
+//nastaveno, že vypne PIN 5+6 ... viz funkce longPressStart1
 int clickHoldDoPin[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1};  //tlacitko-Drží se ....se přepne uvedený PIN. -1 je nenastaveno
 int clickHoldEndPin[] = { -1, -1, 5, -1, -1, -1, -1, -1, -1};  //tlacitko-Pustí držení .... se přepne uvedený PIN. -1 je nenastaveno
 
