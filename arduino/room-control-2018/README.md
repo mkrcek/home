@@ -5,15 +5,15 @@
 
 ## Co nového ve verzi
 
-verze 3/2018
-pouze pro DOOMASTER - NE PRO HOMEKIT - ten se musí upravit
+
+- verze 3/2018
+- pouze pro DOOMASTER - NE PRO HOMEKIT (ten se musí upravit)
+
 --------
 
-// ---------------------------------------------------------------------------
-// Room Control by HTTP GET & POST + Apple HOMEKIT
-//    DEVICE
-//    board: WeMos D1R2
-// ---------------------------------------------------------------------------
+Room Control by HTTP GET & POST + Apple HOMEKIT
+DEVICE:
+board: WeMos D1R2
 
 
 ## Základní nastavení
