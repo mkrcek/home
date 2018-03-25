@@ -4,88 +4,8 @@
 //    board: WeMos D1R2
 // ---------------------------------------------------------------------------
 
-/*
- * 
- * verze 3/2018
- * pouze pro DOOMASTER - NE PRO HOMEKIT - ten se musí upravit
- * 
- * zapojení
+//celý návod v README.md
 
-  PIN A0 = analog - snímač osvětlení
-  PIN D0 = x
-  PIN D1 = x
-  PIN D2 = PIR 
-  PIN D3 = Tlačítko 1
-  PIN D4 = Tlačítko 2
-  PIN D5 = relé (světlo) 1
-  PIN D6 = relé (světlo) 2
-  PIN D7 = tepota (DALLAS teplota - po úpravách DHT - teplotu/vlhkost
-  PIN D8 = x
-
-  PINy D0, D1, D8 jsou nevyužity z důvodu nefunkčnosti připojení na teploměr
-  
-  
-  REST API:
-  
-INFORMACE
-  GET http://xx.xx.xx.xx/
-    vrátí se JSON se všemi údaji
-      {
-          "deviceTemperature": 0,   //je to 19,22 oC
-          "svetlo": 0, 
-          "svetlo2": 0, 
-          “analog”: 0,    //stav analogového čidla - intenzita světla 0 - 1023
-          “motion”: 0,    //stav PIR čidla 0-5
-          "actmillis": 3247,
-          "temptime": 0 }
-      }
-
-ERRORS: 
-      pokud je něco špatně, Arduino odpoví hláškou a kódem:
-      “Nepodarilo se precist JSON” nebo “Chyba při čtení z DHT senzoru!” ….
-      a pošle se kod 400
-
-motion: Stav PIR čidla
-      0 // no Activities detected 
-      1 // Active for the first time 
-      2 // Active - alarm is ON 
-      3 // Alarm is off now - no Activities detected from now 
-      4 // Alarm is off now, but count down the delay (e.g. wait 3 minut when last motion detected 
-      5 // End of Delay after alarm
-
-
-OVLÁDÁNÍ
-      pomocí GET
-        GET http://xx.xx.xx.xx/0 …. vypne svetlo 1
-        GET http://xx.xx.xx.xx/1 …. zapne svetlo 1
-        GET http://xx.xx.xx.xx/2 …. vypne svetlo 2
-        GET http://xx.xx.xx.xx/3 …. zapne svetlo 2
-      nebo pomocí POST :-)
-        POST http://xx.xx.xx.xx/pins/5 {“value”:0, “pwm”:0}  … vypne svetlo 1
-        POST http://xx.xx.xx.xx/pins/5 {“value”:1, “pwm”:0}  … zapne svetlo 1
-        POST http://xx.xx.xx.xx/pins/6 {“value”:0, “pwm”:0}  … vypne svetlo 2
-        POST http://xx.xx.xx.xx/pins/6 {“value”:1, “pwm”:0}  … vypne svetlo 2
-
-POST z Arduina na server
-Arduino při události stisku tlačítka nebo  PIR posílá POST na server
- 
-      stisknut vypínač číslo 1
-          přicházející POST 
-          URL je: /pins/5       ……….kde 5 je vypínač 1
-          JSON: {“value”:0, “pwm”:0}   …. kde value=0 - vypnuto, 1=zapnuto
-      stisknut vypínač číslo 2
-          přicházející POST 
-          URL je: /pins/6       ……….kde 6 je vypínač 2
-          JSON: {“value”:0, “pwm”:0}   …. kde value=0 - vypnuto, 1=zapnuto
-      pohyb na PIR
-          přicházející POST 
-          URL je: /pins/2       ……….kde 2 je PIR čidlo 
-          JSON: {“value”:0, “pwm”:0}   …. kde value=0-5 
-
-
-  - OSTATNÍ FUNKCE TÉMĚŘ STEJNÉ JAKO verze 2017
-
-*/
 
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
@@ -97,7 +17,7 @@ Arduino při události stisku tlačítka nebo  PIR posílá POST na server
 
 
 //update 10.3.2018
-//DALLAS One Wire 
+//DALLAS One Wire
 //martin přidán DALLAS teplota
 //martin: nové označní pinů D1 místo párování na konkretni GPIO
 
@@ -223,7 +143,7 @@ OneButton button2(digitalPins[4], true);    // Nastavení nového "talčítka" O
 
 
 void handleGetDStemperature()  { //informace o teplotě z Dallas OneWire
-  
+
   //nastavení hlavicky
   server.sendHeader("Connection", "keep-alive"); //BODY bude delší, tak se nenastavuje na NULU
   server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
@@ -240,7 +160,7 @@ void handleGetDStemperature()  { //informace o teplotě z Dallas OneWire
     lastTempRead = millis();
     senzoryDS.requestTemperatures();
     temp1 = round(senzoryDS.getTempCByIndex(0) * 100);
-    
+
     // vĂ˝pis teploty na sĂ©riovou linku, pĹ™i pĹ™ipojenĂ­ vĂ­ce ÄŤidel
     // na jeden pin mĹŻĹľeme postupnÄ› naÄŤĂ­st vĹˇechny teploty
     // pomocĂ­ zmÄ›ny ÄŤĂ­sla v zĂˇvorce (0) - poĹ™adĂ­ dle unikĂˇtnĂ­ adresy ÄŤidel
@@ -248,11 +168,11 @@ void handleGetDStemperature()  { //informace o teplotě z Dallas OneWire
     Serial.print(temp1);
     Serial.println(" stupnu Celsia");
   }
-  
+
   int temperature = temp1;
   //int humidity = myDHT.readHumidity();
 
-  
+
     //==JSON vytvoreni obsahu ==
     StaticJsonBuffer<250> jsonBuffer;                           //Reserve memory space
     JsonObject& root = jsonBuffer.createObject();
@@ -267,7 +187,7 @@ void handleGetDStemperature()  { //informace o teplotě z Dallas OneWire
     message += rootstr;
 
     server.send(200, "application/json", message);
-  
+
 }
 
 void handleGetTemperature() {    //informace o teplotě a vlhkosti
@@ -1217,7 +1137,7 @@ void setup(void) {
 
   // ******* nastavení PINů a Tlačítek
 
-  
+
 
   // nalinkovani funkcni pro tlacitko 1
   button1.attachClick(click1);
@@ -1270,7 +1190,7 @@ void setup(void) {
 
 //  server.on("/", handleGetDStemperature);         //teplota DS //dočasne nez omen navrhne jinad
   server.on("/", handleGetDoomaster);         //teplota DS //dočasne nez omen navrhne jinad
-    
+
 
   server.on("/device", HTTP_GET, handleGetDevice);  //informace o zařízení
   server.on("/device", HTTP_POST, handlePostDevice);  //nastavi o zařízení
@@ -1305,7 +1225,7 @@ void setup(void) {
   server.on("/pins/5", HTTP_POST, handleSetDigiPin);
   server.on("/pins/6", HTTP_POST, handleSetDigiPin);
   //server.on("/pins/7", HTTP_POST, handleSetDigiPin);- není možné, je to teplotni číslo DS OneWire
-  server.on("/pins/8", HTTP_POST, handleSetDigiPin); 
+  server.on("/pins/8", HTTP_POST, handleSetDigiPin);
 
   //osetreni stavu CORS, pomoci OPTIONS
   //server.on("/pins/0", HTTP_OPTIONS, handleOptionsDigiPin);  - není možné, je to teplotni číslo
@@ -1316,8 +1236,8 @@ void setup(void) {
   server.on("/pins/5", HTTP_OPTIONS, handleOptionsDigiPin);
   server.on("/pins/6", HTTP_OPTIONS, handleOptionsDigiPin);
   //server.on("/pins/7", HTTP_OPTIONS, handleOptionsDigiPin);- není možné, je to teplotni číslo DS OneWire
-  server.on("/pins/8", HTTP_OPTIONS, handleOptionsDigiPin); 
-  
+  server.on("/pins/8", HTTP_OPTIONS, handleOptionsDigiPin);
+
   //cteni konfigurace jednotlivých PINu pomoci GET
   server.on("/pins/0/config", HTTP_GET, handleGetConfigPin);
   server.on("/pins/1/config", HTTP_GET, handleGetConfigPin);
@@ -1442,14 +1362,14 @@ void handleZapni1() {     //zapne svetlo na PIN 5
 
   String message = "";
 
-  int pinNumber;                
+  int pinNumber;
   pinNumber = 5;
- 
-  
+
+
   //==vlastní funkcnost zapinani
 
   //nově
-  
+
     int value = 1;
     if (relayOnHighPins[pinNumber]) {
       digitalWrite(digitalPins[pinNumber], value);
@@ -1468,16 +1388,16 @@ void handleVypni1() {     //vypne svetlo na PIN 5
 
   String message = "";
 
-  int pinNumber;                
+  int pinNumber;
   pinNumber = 5;
- 
-  
+
+
   //==vlastní funkcnost zapinani
 
   //nově
 
-    
-  
+
+
     int value = 0;
     if (relayOnHighPins[pinNumber]) {
       digitalWrite(digitalPins[pinNumber], value);
@@ -1496,14 +1416,14 @@ void handleZapni2() {     //zapne svetlo na PIN 6
 
   String message = "";
 
-  int pinNumber;                
+  int pinNumber;
   pinNumber = 6;
- 
-  
+
+
   //==vlastní funkcnost zapinani
 
   //nově
-  
+
     int value = 1;
     if (relayOnHighPins[pinNumber]) {
       digitalWrite(digitalPins[pinNumber], value);
@@ -1522,16 +1442,16 @@ void handleVypni2() {     //vypne svetlo na PIN 6
 
   String message = "";
 
-  int pinNumber;                
+  int pinNumber;
   pinNumber = 6;
- 
-  
+
+
   //==vlastní funkcnost zapinani
 
   //nově
 
-    
-  
+
+
     int value = 0;
     if (relayOnHighPins[pinNumber]) {
       digitalWrite(digitalPins[pinNumber], value);
@@ -1550,7 +1470,7 @@ void handleVypni2() {     //vypne svetlo na PIN 6
 
 void handleGetDoomaster()  { //informace vypinaci
   //{"deviceTemperature":65409,"svetlo":0,"actmillis":18076,"TempTime":15003}
-  
+
   //nastavení hlavicky
   server.sendHeader("Connection", "keep-alive"); //BODY bude delší, tak se nenastavuje na NULU
   server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
@@ -1569,7 +1489,7 @@ void handleGetDoomaster()  { //informace vypinaci
     lastTempRead = millis();
     senzoryDS.requestTemperatures();
     temp1 = round(senzoryDS.getTempCByIndex(0) * 100);
-    
+
     // vĂ˝pis teploty na sĂ©riovou linku, pĹ™i pĹ™ipojenĂ­ vĂ­ce ÄŤidel
     // na jeden pin mĹŻĹľeme postupnÄ› naÄŤĂ­st vĹˇechny teploty
     // pomocĂ­ zmÄ›ny ÄŤĂ­sla v zĂˇvorce (0) - poĹ™adĂ­ dle unikĂˇtnĂ­ adresy ÄŤidel
@@ -1577,7 +1497,7 @@ void handleGetDoomaster()  { //informace vypinaci
    // Serial.print(temp1);
    // Serial.println(" stupnu Celsia");
   }
-  
+
   int temperature = temp1;
 
 
@@ -1585,9 +1505,9 @@ void handleGetDoomaster()  { //informace vypinaci
   //cte hodnotu svetla 1
   int value = 0;
   int pinNumber = 5;
-  
+
   value = digitalRead(digitalPins[pinNumber]);
-    
+
   if (relayOnHighPins[pinNumber]) {
     value = value;
   } else {
@@ -1600,13 +1520,13 @@ void handleGetDoomaster()  { //informace vypinaci
 
     Serial.print("rele 1 je: ");
     Serial.println(value);
-    
+
  //cte hodnotu svetla 2
   int value2 = 0;
   int pinNumber2 = 6;
-  
+
   value2 = digitalRead(digitalPins[pinNumber2]);
-    
+
   if (relayOnHighPins[pinNumber2]) {
     value2 = value2;
   } else {
@@ -1627,13 +1547,13 @@ void handleGetDoomaster()  { //informace vypinaci
   int value_analog = 0;
   value_analog = analogRead(analogPins[0]);
 
-  
-  
+
+
  //==JSON vytvoreni obsahu ==
     StaticJsonBuffer<250> jsonBuffer;                           //Reserve memory space
     JsonObject& root = jsonBuffer.createObject();
     root["deviceTemperature"] = temperature;
-    
+
     root["svetlo"] = value;                             // stav svetla / rele 2
     root["svetlo2"] = value2;                           // stav svetla / rele 2
     root["analog"] = value_analog;                      // stav analogového čidla - intenzita světla
@@ -1648,5 +1568,5 @@ void handleGetDoomaster()  { //informace vypinaci
     message += rootstr;
 
     server.send(200, "application/json", message);
-  
+
 }

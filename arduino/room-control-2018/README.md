@@ -1,5 +1,7 @@
 # ROOMcontrol: Arduino 25.3.2018 22:00
 
+Room Control by HTTP GET & POST + Apple HOMEKIT
+- Arduino Board: **ESP WeMos D1R2**
 
 ----------
 
@@ -11,11 +13,9 @@
 
 --------
 
-Room Control by HTTP GET & POST + Apple HOMEKIT
-- Arduino Board: WeMos D1R2
 
 
-# Základní nastavení
+# HW: Základní nastavení PINů pro ESP
 
 - PIN A0 = analog - snímač osvětlení
 - PIN D0 = x
@@ -30,6 +30,67 @@ Room Control by HTTP GET & POST + Apple HOMEKIT
 
 PINy D0, D1, D8 jsou nevyužity z důvodu nefunkčnosti připojení na teploměr
 
+## Relé
+Připojené relé je nastaveno na spínaní LOW (tedy nulou)
+- konfigurace v array: relayOnHighPins
+- informace poskytuje funkce handleGetConfigPin()
+- je možné měnit vzdáleně pomocí GET
+
+        GET xx.xx.xx.xx/pins/5/config
+
+a dostanu JSON
+
+        {
+              "name": "svetlo-1",
+              "location": "",
+              "digitalWrite": true,     //výstupní PIN
+              "relayOnHigh": false,     //spíná na LOW
+              "inUse": true,
+              "buttonClick": -1,
+              "buttonDoubleClick": -1,
+              "buttonHoldStart": -1,
+              "buttonHold": -1,
+              "buttonHoldEnd": -1
+        }
+
+- konfigurace /nastavení/ RELÉ je možná pomocí POST
+
+      POST xx.xx.xx.xx/pins/5/config
+
+a odeslaním JSON s požadovanou změnou.
+
+        {
+              "name": "svetlo-1",
+              "location": "",
+              "digitalWrite": true,     //výstupní PIN
+              "relayOnHigh": false,     //spíná na LOW
+              "inUse": true,
+              "buttonClick": -1,
+              "buttonDoubleClick": -1,
+              "buttonHoldStart": -1,
+              "buttonHold": -1,
+              "buttonHoldEnd": -1
+        }
+
+
+KONEc
+
+        {
+            "name": "vypÃ­naÄ okolÃ­",
+            "location": "",
+            "digitalWrite": false,
+            "relayOnHigh": true,
+            "inUse": true,
+            "buttonClick": 6,
+            "buttonDoubleClick": 6,
+            "buttonHoldStart": 6,
+            "buttonHold": -1,
+            "buttonHoldEnd": -1
+        }
+
+
+
+--------
 
 ## REST API
 
@@ -91,7 +152,7 @@ nebo pomocí POST :-)
 
 Arduino při události stisku tlačítka nebo PIR odesílá POST na server
 
-Stisknut vypínač číslo 1:
+**Stisknut vypínač číslo 1:**
 
 
       POST URL je: /pins/5       (kde 5 je vypínač číslo 1)
@@ -105,7 +166,7 @@ JSON:
 
 kde value=0 - vypnuto, 1=zapnuto
 
-- stisknut vypínač číslo 2:
+**Stisknut vypínač číslo 2:**
 
 
 
@@ -119,7 +180,7 @@ JSON:
 
 kde value=0 - vypnuto, 1=zapnuto
 
-Pohyb na PIR:
+**Pohyb na PIR:**
 
 
       POST URL je: /pins/2       (kde 2 je PIR čidlo)
