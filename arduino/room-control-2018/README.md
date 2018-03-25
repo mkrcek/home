@@ -32,7 +32,7 @@ PINy D0, D1, D8 jsou nevyužity z důvodu nefunkčnosti připojení na teploměr
 
 
 
-## INFORMACE PRO DOOMASTER
+# INFORMACE PRO DOOMASTER
 
       GET http://xx.xx.xx.xx/
 
@@ -83,9 +83,10 @@ nebo pomocí POST :-)
         POST http://xx.xx.xx.xx/pins/6 {“value”:0, “pwm”:0}     vypne svetlo 2
         POST http://xx.xx.xx.xx/pins/6 {“value”:1, “pwm”:0}     vypne svetlo 2
 
-
+Kompletní API níže:
 -----
 
+#REST API
 ## POST z Arduina na server
 
 Arduino při události stisku tlačítka nebo PIR odesílá POST na server
@@ -121,25 +122,43 @@ kde value=0 - vypnuto, 1=zapnuto
 **Pohyb na PIR:**
 
 
-      POST URL je: /pirs/2       (jiná URL-!! )
+      POST URL je: /pins/2       (kde 2 je PIR )
 
 
 JSON:
 
-      {
-            "interval": 3000,
-            "starttime": 3516836,
-            "currenttime": 3523545,
-            "motion": 0
-      }
+      {“value”:0, “pwm”:0}
 
 
-kde "motion" je v intervalu 0-5 (viz MOTION: Stav PIR čidla)
+kde "“value”" je v intervalu 0-5 (viz MOTION: Stav PIR čidla)
 
 ------
 
 # ** PODROBNE NASTAVENI **
 ==================
+
+
+## Konfigurace Analog = Intenzita světla
+
+Připojený je jeden analogový vstup se snímačem intenzity osvětlení. ESP má jen jeden analogový vstup.
+
+- vrací hodnoty od 0 - 1023
+- funkce handleGetAnalog ()
+- je možné zjistit vzdáleně pomocí GET
+
+        GET xx.xx.xx.xx/analog
+
+a dostanu JSON
+
+        {
+              "value": 0
+        }
+
+- konfigurace není
+
+
+
+-----
 
 ## Konfigurace PIR
 Připojené k Arduinu jen (JEDNO) 1x PIR čidlo. SW umožňuje  připojit ještě druhé PIR čidlo na D1. Zatím netestováno.
@@ -152,7 +171,7 @@ Default konfigurace
 - kažý stav reportuje pomocí POST na server
 
 PIR senzor se konfiguruje na 2 funkce
-1. které PIN/relé se má spínat
+1. co/které PIN/relé se má spínat
 2. kdy se má spínat a jaký je stav čidla
 
 je nastaveno na spínaní LOW (tedy nulou) -MM__________
@@ -285,6 +304,8 @@ a odeslaním JSON s požadovanou změnou.
         }
 
 pozn. Před odeslání JSON smazat vše s //
+
+
 ------
 
 ## Konfigurace Relé
@@ -335,3 +356,29 @@ a odeslaním JSON s požadovanou změnou.
 pozn. Před odeslání JSON smazat vše s //
 
 --------
+
+## Konfigurace Tepolta
+
+K Arduinu je možné připojit 2 typy teploměrů.
+- DHT11 měřící teplotu a vlhkost
+- oneWire DALLAS měřící teplotou
+
+v kódu jsou funkce pro oba senzory, defaultní nastavení je DALLAS.
+
+
+DALLAS:
+- vrací 1. teploměr v řadě (další nejsou nastaveny)
+- funkce handleGetDStemperature ()
+- je možné zjistit vzdáleně pomocí GET
+
+        GET xx.xx.xx.xx/pins/7
+
+a dostanu JSON
+
+          {
+                "deviceTemperature": -12700,
+                "actmillis": 4946253,
+                "TempTime": 4946253
+          }
+
+- konfigurace není
