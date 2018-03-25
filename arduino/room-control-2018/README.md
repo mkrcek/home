@@ -439,7 +439,7 @@ a dostanu JSON
         }
 
 
-- konfigurace /nastavení/ DEVICE je možná pomocí POST, na funkci handlePostDevice()
+konfigurace /nastavení/ DEVICE je možná pomocí POST, na funkci handlePostDevice()
 
       POST xx.xx.xx.xx/device
 
@@ -454,3 +454,9 @@ a odeslaním JSON s požadovanou změnou. Pouze tyto položky je možné měnit:
 
 
 pozn. Před odeslání JSON smazat vše s //
+
+---
+
+## Konfigurace souborem
+
+v souboru wifi_config.h je uložena konfigurace načtená při kompilaci. Příklad je uveden v wifi_config_example
