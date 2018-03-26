@@ -67,7 +67,7 @@ String deviceLocation = "Room";
 #include "wifi_config.h"   
 const char* ssid = ssid_config; 
 const char* password = pws_config;
-IPAddress arduinoIP (192,168,0,70);   //static IP address
+IPAddress arduinoIP (192,168,0,71);   //static IP address
 IPAddress gateway(192, 168, 0, 1); // set gateway to match your network
 IPAddress subnet(255, 255, 255, 250); // set subnet mask to match your network
 

@@ -92,8 +92,8 @@ String locationPins[] = { "", "", "", "", "", "", "", "", ""};        //popis um
 bool digitalWritePins[] = { false, false, false, false, false, true, true, true, false};   //piny 5, 6, 7, (8) jsou vystupní
 bool relayOnHighPins[] = { true, true, true, true, true, false, false, true, true}; //čím se sepne relé true = HIGH
 bool inusePin[] = { false, false, true, true, true, true, true, true, false};       //jeli pin používán
-int clickPin[] = { -1, -1, -1, 5, 6, -1, -1, -1, -1};  //tlacitko-click se přepne uvedený PIN. -1 je nenastaveno
-int click2Pin[] = { -1, -1, -1, 6, 6, -1, -1, -1, -1};  //tlacitko-double click se přepne uvedený PIN. -1 je nenastaveno
+int clickPin[] =      { -1, -1, -1, 5, 6, -1, -1, -1, -1};  //tlacitko-click se přepne uvedený PIN. -1 je nenastaveno
+int click2Pin[] =     { -1, -1, -1, 6, 6, -1, -1, -1, -1};  //tlacitko-double click se přepne uvedený PIN. -1 je nenastaveno
 int clickHoldStartPin[] = { -1, -1, 5, 5, 6, -1, -1, -1, -1};  //tlacitko-Začne držet ... se přepne uvedený PIN. -1 je nenastaveno
 //nastaveno, že vypne PIN 5+6 ... viz funkce longPressStart1
 int clickHoldDoPin[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1};  //tlacitko-Drží se ....se přepne uvedený PIN. -1 je nenastaveno
@@ -985,6 +985,7 @@ void click2() {              // P4
 
 void doubleclick2() {        // nic
   Serial.println("Button 2 doubleclick.");
+  switchChange (click2Pin[4]);
 } // doubleclick2
 
 void longPressStart2() {     // off: 3+4
