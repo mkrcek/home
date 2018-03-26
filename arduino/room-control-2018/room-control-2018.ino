@@ -89,9 +89,9 @@ int digitalPins[] = {16, 5, 4, 0, 2, 14, 12, 13, 15};   //mapování PINů pro R
 int pwmPins[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1};  //uložení hodnoty pwm, když je (-1), tak není pwm nastaveno
 String namePins[] = { "NaN", "NaN", "PIR", "Tlacitko-1", "Tlacitko-1", "svetlo-1", "svetlo-2", "Teplota DS", "NaN"};  //popis
 String locationPins[] = { "", "", "", "", "", "", "", "", ""};        //popis umístění
-bool digitalWritePins[] = { false, false, false, false, false, true, true, true, false};   //piny 5, 6, 7, (8) jsou vystupní
+bool digitalWritePins[] = { false, false, false, false, false, true, true, true, false};   //piny 0, 5, 6, 7, (8) jsou vystupní
 bool relayOnHighPins[] = { true, true, true, true, true, false, false, true, true}; //čím se sepne relé true = HIGH
-bool inusePin[] = { false, false, true, true, true, true, true, true, false};       //jeli pin používán
+bool inusePin[] = { false, true, true, true, true, true, true, true, false};       //jeli pin používán
 int clickPin[] =      { -1, -1, -1, 5, 6, -1, -1, -1, -1};  //tlacitko-click se přepne uvedený PIN. -1 je nenastaveno
 int click2Pin[] =     { -1, -1, -1, 6, 6, -1, -1, -1, -1};  //tlacitko-double click se přepne uvedený PIN. -1 je nenastaveno
 int clickHoldStartPin[] = { -1, -1, 5, 5, 6, -1, -1, -1, -1};  //tlacitko-Začne držet ... se přepne uvedený PIN. -1 je nenastaveno
@@ -100,19 +100,32 @@ int clickHoldDoPin[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1};  //tlacitko-Drží
 int clickHoldEndPin[] = { -1, -1, 5, -1, -1, -1, -1, -1, -1};  //tlacitko-Pustí držení .... se přepne uvedený PIN. -1 je nenastaveno
 
 
+
+// *************inicializace čidla teploty a vlhkosti
+//
+// inicializace DHT senzoru s nastaveným pinem a typem senzoru
+// pokud je připojen teplomer - někdy problemy pri kompilaci
+
+const int pinDHT11 = 1;
+DHT myDHT(digitalPins[pinDHT11], DHT11);
+int temperatureDHT = 127000;    //globální teplota
+int humidityDHT = 127000;       //globální vlhkost
+int chkDHT = 127000;            //globální chyba při čtení
+
+
 // ************* TEPLOTA OneWire DS configuration  *****
 //TEPLOTA
 
 #include <OneWire.h>
 #include <DallasTemperature.h>
-long temp1 = -9899;   //globální teplota pro OneWire DS teploměr
+long tempDALLAS = -9899;   //globální teplota pro OneWire DS teploměr
 unsigned long lastTempRead = 0;
 // nastaveni vstupniho cisla Teplota
 
-const int pinCidlaDS = D7;
+const int pinCidlaDS = 7;
 
 // instance oneWireDS z knihovny OneWire
-OneWire oneWireDS(pinCidlaDS);
+OneWire oneWireDS(digitalPins[pinCidlaDS]);
 // instance senzoryDS z knihovny DallasTemperature
 DallasTemperature senzoryDS(&oneWireDS);
 
@@ -127,15 +140,14 @@ DallasTemperature senzoryDS(&oneWireDS);
 ESP8266WebServer server(80);
 
 
-// *************inicializace čidla teploty a vlhkosti
-// inicializace DHT senzoru s nastaveným pinem a typem senzoru
-//DHT myDHT(digitalPins[0], DHT11);
-DHT myDHT(digitalPins[0], DHT11);
-
 
 //*************inicializace HW tlačítek
-OneButton button1(digitalPins[3], true);    // Nastavení nového "talčítka" OneButton na PIN P3, true = tlačítko se spina na LOW
-OneButton button2(digitalPins[4], true);    // Nastavení nového "talčítka" OneButton na PIN P4
+
+const int pinTlacitka1 = 3;
+const int pinTlacitka2 = 4;
+
+OneButton button1(digitalPins[pinTlacitka1], true);    // Nastavení nového "talčítka" OneButton na PIN P3, true = tlačítko se spina na LOW
+OneButton button2(digitalPins[pinTlacitka2], true);    // Nastavení nového "talčítka" OneButton na PIN P4
 
 
 
@@ -154,24 +166,23 @@ void handleGetDStemperature()  { //informace o teplotě z Dallas OneWire
   String message = "";
   unsigned long actmill = millis();
 
-  // čte z OneWire v globální promene temp1
+  // čte z OneWire v globální promene tempDALLAS
   // aktualizuje každcýh 5 s
 
   if ((millis() - lastTempRead) > 5000) {
     lastTempRead = millis();
     senzoryDS.requestTemperatures();
-    temp1 = round(senzoryDS.getTempCByIndex(0) * 100);
+    tempDALLAS = round(senzoryDS.getTempCByIndex(0) * 100);
 
     // vĂ˝pis teploty na sĂ©riovou linku, pĹ™i pĹ™ipojenĂ­ vĂ­ce ÄŤidel
     // na jeden pin mĹŻĹľeme postupnÄ› naÄŤĂ­st vĹˇechny teploty
     // pomocĂ­ zmÄ›ny ÄŤĂ­sla v zĂˇvorce (0) - poĹ™adĂ­ dle unikĂˇtnĂ­ adresy ÄŤidel
     Serial.print("Teplota cidla DS18B20: ");
-    Serial.print(temp1);
+    Serial.print(tempDALLAS);
     Serial.println(" stupnu Celsia");
   }
 
-  int temperature = temp1;
-  //int humidity = myDHT.readHumidity();
+  int temperature = tempDALLAS;
 
 
     //==JSON vytvoreni obsahu ==
@@ -191,7 +202,7 @@ void handleGetDStemperature()  { //informace o teplotě z Dallas OneWire
 
 }
 
-void handleGetTemperature() {    //informace o teplotě a vlhkosti
+void handleGetTemperature() {    //informace o teplotě a vlhkosti DHT11
 
   //nastavení hlavicky
   server.sendHeader("Connection", "keep-alive"); //BODY bude delší, tak se nenastavuje na NULU
@@ -204,14 +215,30 @@ void handleGetTemperature() {    //informace o teplotě a vlhkosti
   // pomocí funkcí readTemperature a readHumidity načteme
   // do proměnných tep a vlh informace o teplotě a vlhkosti,
   // čtení trvá cca 250 ms
-  int temperature = myDHT.readTemperature();
-  int humidity = myDHT.readHumidity();
 
-  // kontrola, je li v pořádku teplota //https://playground.arduino.cc/Main/DHTLib    //musímít napájení +5v ne 3.3
-  int chk = myDHT.read();
-  if (chk != 1) {
+  if ((millis() - lastTempRead) > 5000) {         //každcýh 5 s se aktualizuje
+    int temperature = myDHT.readTemperature();
+    int humidity = myDHT.readHumidity();
+    lastTempRead = millis();
+
+    // kontrola, je li v pořádku teplota //https://playground.arduino.cc/Main/DHTLib    //musímít napájení +5v ne 3.3
+    int chk = myDHT.read();
+        
+    Serial.print("DHT - teplota: ");
+    Serial.print(temperature);
+    Serial.print(" a vlhkost : ");
+    Serial.print(humidity);
+    Serial.print(" a kontrolni chybovy soucet : ");     
+    Serial.println(chk);
+    temperatureDHT = temperature;
+    humidityDHT = humidity;
+    chkDHT = chk;
+  }
+
+  
+  if (chkDHT != 1) {
     // při chybném čtení vypiš hlášku
-    message = ("Chyba při čtení z DHT senzoru!");
+    message = ("Chyba pri cteni DHT senzoru!");
     server.send(404, "application/javascript", message);
     return;
 
@@ -220,8 +247,8 @@ void handleGetTemperature() {    //informace o teplotě a vlhkosti
     //==JSON vytvoreni obsahu ==
     StaticJsonBuffer<250> jsonBuffer;                           //Reserve memory space
     JsonObject& root = jsonBuffer.createObject();
-    root["deviceTemperature"] = temperature;
-    root["deviceHumidity"] = humidity;
+    root["deviceDHTTemperature"] = temperatureDHT;
+    root["deviceDHTHumidity"] = humidityDHT;
 
     //==JSON generuje vystup ==
     int len = root.measureLength() + 1; //delka cele zpravy
@@ -657,35 +684,6 @@ void handleGetConfigPin() { //načtení konfigurace jednotlivých pinů
 
 } //konec fce
 
-void handleGetPinList() {   //informace o používaných PINech (inUse)
-
-  String message = "";
-  int i;
-  int pinCount = 0;
-
-  //==JSON vytvoreni obsahu ==
-  StaticJsonBuffer<250> jsonBuffer;                           //Reserve memory space
-  JsonObject& root = jsonBuffer.createObject();
-  JsonArray& data = root.createNestedArray("pin");
-
-  pinCount = sizeof(digitalPins) / sizeof(digitalPins[0]);  //sizeof je mnozstvi bytu v digitalPins, ne pocet elementu. Proto se musi vydelit
-  for (i = 0; i < pinCount ; i++) {
-    if (inusePin[i]) {
-      data.add(i);
-    }
-  }
-  //==
-
-  //==JSON generuje vystup ==
-  int len = root.measureLength() + 1; //delka cele zpravy
-  char rootstr[len];
-  root.printTo(rootstr, len);         //vygeneruje JSON
-  message += rootstr;
-  //==
-
-  server.send(200, "text/plain", message);
-
-}
 
 
 void handleGetPir() {     //get information about Alarm Sensors ... from URL
@@ -848,7 +846,13 @@ void handleNotFound() {     //pokud URL není nalezeno, používám pro laděni 
 
 void resetPins() {          //prvotní nastavení - nastav vystupni PIN na vypnuto
 
+//pro tlačítka:
+      pinMode(digitalPins[pinTlacitka1], INPUT_PULLUP);
+      digitalWrite(digitalPins[pinTlacitka1], LOW );
 
+      pinMode(digitalPins[pinTlacitka2], INPUT_PULLUP);
+      digitalWrite(digitalPins[pinTlacitka2], LOW );
+      
   int pinCount = 0;
   pinCount = sizeof(digitalPins) / sizeof(digitalPins[0]);  //sizeof je mnozstvi bytu v digitalPins, ne pocet elementu. Proto se musi vydelit
   for (int i = 0; i < pinCount ; i++) {
@@ -860,8 +864,7 @@ void resetPins() {          //prvotní nastavení - nastav vystupni PIN na vypnu
       } else {
         digitalWrite(digitalPins[i], 1);
       }
-    }
-
+    } 
   }
 }
 
@@ -950,20 +953,20 @@ void sendPostToServer(int pinNumber, int pinValue, int pinPwm) { //poslani POST 
 void click1() {             // P3
   // This function will be called when the button1 was pressed 1 time (and no 2. button press followed).
   Serial.println("Button 1 click.");
-  switchChange (clickPin[3]);         //změní aktuální stav PINU 1->0 nebo 0->1
+  switchChange (clickPin[pinTlacitka1]);         //změní aktuální stav PINU 1->0 nebo 0->1
 } // click1
 
 void doubleclick1() {       // P4
   // This function will be called when the button1 was pressed 2 times in a short timeframe.
   Serial.println("Button 1 doubleclick.");
-  switchChange (click2Pin[4]);
+  switchChange (click2Pin[pinTlacitka2]);
 } // doubleclick1
 
 void longPressStart1() {    //off: 3+4
   // This function will be called once, when the button1 is pressed for a long time.
   Serial.println("Button 1 longPress start");
-  switchOff(clickHoldStartPin[3]);
-  switchOff(clickHoldStartPin[4]);
+  switchOff(clickHoldStartPin[pinTlacitka1]);
+  switchOff(clickHoldStartPin[pinTlacitka2]);
 } // longPressStart1
 
 void longPress1() {       //nic
@@ -980,18 +983,18 @@ void longPressStop1() {  // nic
 // funkce pri stisknuti tlacitka 2
 void click2() {              // P4
   Serial.println("Button 2 click.");
-  switchChange (clickPin[4]);
+  switchChange (clickPin[pinTlacitka2]);
 } // click2
 
 void doubleclick2() {        // nic
   Serial.println("Button 2 doubleclick.");
-  switchChange (click2Pin[4]);
+  switchChange (click2Pin[pinTlacitka2]);
 } // doubleclick2
 
 void longPressStart2() {     // off: 3+4
   Serial.println("Button 2 longPress start");
-  switchOff(clickHoldStartPin[3]);
-  switchOff(clickHoldStartPin[4]);
+  switchOff(clickHoldStartPin[pinTlacitka1]);
+  switchOff(clickHoldStartPin[pinTlacitka2]);
 
 } // longPressStart2
 
@@ -1184,15 +1187,24 @@ void setup(void) {
 
   // ******* nastavení poslouchání na GET/POST
 
-  //server.on("/", handleRoot);         //zde je i zakladni help a popis
-  //toto bylo spravne
-  // pro demo ucely vraci obdobne jako SDS - nez bude mit omen update
-  //handleRoot je zde
+
+
+// ******
+//funkčnost pro DOOMastera
+
+  server.on("/", handleGetDoomaster);         //zobrazí všechny vystupy pinů
+
+    //nastavení pomocí GET místo klasického POST
+  server.on("/1", handleZapni1);   //testování s Omenem Doomaster - zapne svetlo P5
+  server.on("/0", handleVypni1);   //testování s Omenem Doomaster - vypne svetlo P5
+  server.on("/3", handleZapni2);   //testování s Omenem Doomaster - zapne svetlo P5
+  server.on("/2", handleVypni2);   //testování s Omenem Doomaster - vypne svetlo P5
+//funkčnost pro DOOMastera - konec
+
+
+// ******
+
   server.on("/help", handleRoot);         //zde je i zakladni help a popis
-
-//  server.on("/", handleGetDStemperature);         //teplota DS //dočasne nez omen navrhne jinad
-  server.on("/", handleGetDoomaster);         //teplota DS //dočasne nez omen navrhne jinad
-
 
   server.on("/device", HTTP_GET, handleGetDevice);  //informace o zařízení
   server.on("/device", HTTP_POST, handlePostDevice);  //nastavi o zařízení
@@ -1200,16 +1212,9 @@ void setup(void) {
 
   server.on("/analog", handleGetAnalog);            //precte analogovy vstup
 
-  server.on("/pins", handleGetPinList);            //vypise seznam pinů
-
-  server.on("/1", handleZapni1);   //testování s Omenem Doomaster - zapne svetlo P5
-  server.on("/0", handleVypni1);   //testování s Omenem Doomaster - vypne svetlo P5
-  server.on("/3", handleZapni2);   //testování s Omenem Doomaster - zapne svetlo P5
-  server.on("/2", handleVypni2);   //testování s Omenem Doomaster - vypne svetlo P5
-
   //cteni PINu pomoci GET
-  server.on("/pins/0", HTTP_GET, handleGetTemperature);
-  server.on("/pins/1", HTTP_GET, handleGetDigiPin);
+  server.on("/pins/0", HTTP_GET, handleGetDigiPin);
+  server.on("/pins/1", HTTP_GET, handleGetTemperature);
   server.on("/pins/2", HTTP_GET, handleGetDigiPin);
   server.on("/pins/3", HTTP_GET, handleGetDigiPin);
   server.on("/pins/4", HTTP_GET, handleGetDigiPin);
@@ -1219,8 +1224,8 @@ void setup(void) {
   server.on("/pins/8", HTTP_GET, handleGetDigiPin);
 
   //nastaveni PINu pomoci POST
-  //server.on("/pins/0", HTTP_POST, handleSetDigiPin); - není možné, je to teplotni číslo
-  server.on("/pins/1", HTTP_POST, handleSetDigiPin);
+  server.on("/pins/0", HTTP_POST, handleSetDigiPin); 
+  //server.on("/pins/1", HTTP_POST, handleSetDigiPin);- není možné, je to teplotni číslo
   server.on("/pins/2", HTTP_POST, handleSetDigiPin);
   server.on("/pins/3", HTTP_POST, handleSetDigiPin);
   server.on("/pins/4", HTTP_POST, handleSetDigiPin);
@@ -1230,8 +1235,8 @@ void setup(void) {
   server.on("/pins/8", HTTP_POST, handleSetDigiPin);
 
   //osetreni stavu CORS, pomoci OPTIONS
-  //server.on("/pins/0", HTTP_OPTIONS, handleOptionsDigiPin);  - není možné, je to teplotni číslo
-  server.on("/pins/1", HTTP_OPTIONS, handleOptionsDigiPin);
+  server.on("/pins/0", HTTP_OPTIONS, handleOptionsDigiPin);  
+  //server.on("/pins/1", HTTP_OPTIONS, handleOptionsDigiPin);- není možné, je to teplotni číslo
   server.on("/pins/2", HTTP_OPTIONS, handleOptionsDigiPin);
   server.on("/pins/3", HTTP_OPTIONS, handleOptionsDigiPin);
   server.on("/pins/4", HTTP_OPTIONS, handleOptionsDigiPin);
@@ -1278,17 +1283,16 @@ void setup(void) {
   //pro PIR cidlo
 
   //cteni PIR PINu pomoci GET - jiné url
-  server.on("/pirs/1", HTTP_GET, handleGetPir);
+  //server.on("/pirs/1", HTTP_GET, handleGetPir); - není možné, je to teplotni číslo
   server.on("/pirs/2", HTTP_GET, handleGetPir);
 
   //nastaveni PINu pomoci POST
-  server.on("/pirs/1", HTTP_POST, handleSetPir);
+  //server.on("/pirs/1", HTTP_POST, handleSetPir); - není možné, je to teplotni číslo
   server.on("/pirs/2", HTTP_POST, handleSetPir);
 
   //osetreni stavu CORS, pomoci OPTIONS
-  server.on("/pirs/1", HTTP_OPTIONS, handleOptionsPir);
+  //server.on("/pirs/1", HTTP_OPTIONS, handleOptionsPir); - není možné, je to teplotni číslo
   server.on("/pirs/2", HTTP_OPTIONS, handleOptionsPir);
-
 
 
   server.onNotFound(handleNotFound);
@@ -1298,16 +1302,10 @@ void setup(void) {
 
 
 
-
-
 //TEPLOTA DS
-    pinMode(pinCidlaDS, OUTPUT);  //nutné pro ESP - MEGA asi má
+    pinMode(digitalPins[pinCidlaDS], OUTPUT);  //nutné pro ESP - MEGA asi má
    // zapnuti­ komunikace knihovny s teplotnim cidlem
     senzoryDS.begin();
-
-
-
-
 
 
 
@@ -1326,11 +1324,12 @@ void loop(void) {
   button1.tick();
   button2.tick();
 
+
   //checking for alarm activation - in this case PIR motino
-  alarmStatus (2);
+  alarmStatus (2);        //pir čidlo na čísle 2
   if (alarmStatusValue[2] == AlarmSensorOn1st) {
     Serial.println ("ALARM ON");
-    switchOn(5);                 //Switch On the light
+    switchOn(5);                 //Switch On the light - čídlo 5
     sendPostToServer(2, 1, 0);   //send info to server - Alarm is ON
   }
 
@@ -1346,15 +1345,7 @@ void loop(void) {
   }
 }
 
-/*
-  const int AlarmSensorArmed = 0;       // no Activities detected
-  const int AlarmSensorOn1st = 1;       // Active for the first time
-  const int AlarmSensorOn = 2;          // Active - alarm is ON
-  const int AlarmSensorStoped = 3;      // Alarm is off now - no Activities detected from now
-  const int AlarmSensorDelay = 4;       // Alarm is off now, but count down the delay (e.g. wait 3 minut when last motion detected
-  const int AlarmSensorDelayEnd = 5;       // End of Delay after alarm
 
-*/
 
 
 //======= pro demo s Doomastera ==== 21.3.2018
@@ -1471,7 +1462,7 @@ void handleVypni2() {     //vypne svetlo na PIN 6
 
 
 void handleGetDoomaster()  { //informace vypinaci
-  //{"deviceTemperature":65409,"svetlo":0,"actmillis":18076,"TempTime":15003}
+  //{"deviceTemperature":-12700,"svetlo":1,"svetlo2":0,"analog":0,"motion":2,"actmillis":296384,"temptime":296384}
 
   //nastavení hlavicky
   server.sendHeader("Connection", "keep-alive"); //BODY bude delší, tak se nenastavuje na NULU
@@ -1483,25 +1474,28 @@ void handleGetDoomaster()  { //informace vypinaci
   unsigned long actmill = millis();
 
 
-
-  // čte z OneWire v globální promene temp1
+  // Teplota 
   // aktualizuje každcýh 5 s
-
   if ((millis() - lastTempRead) > 5000) {
+
+    // Teplota DALLAS
+    // čte z OneWire v globální promene tempDALLAS je teplota
     lastTempRead = millis();
     senzoryDS.requestTemperatures();
-    temp1 = round(senzoryDS.getTempCByIndex(0) * 100);
+    tempDALLAS = round(senzoryDS.getTempCByIndex(0) * 100);
 
-    // vĂ˝pis teploty na sĂ©riovou linku, pĹ™i pĹ™ipojenĂ­ vĂ­ce ÄŤidel
-    // na jeden pin mĹŻĹľeme postupnÄ› naÄŤĂ­st vĹˇechny teploty
-    // pomocĂ­ zmÄ›ny ÄŤĂ­sla v zĂˇvorce (0) - poĹ™adĂ­ dle unikĂˇtnĂ­ adresy ÄŤidel
-   // Serial.print("Teplota cidla DS18B20: ");
-   // Serial.print(temp1);
-   // Serial.println(" stupnu Celsia");
+
+    //Teplota DHT11
+    int temperature = myDHT.readTemperature() * 100;
+    int humidity = myDHT.readHumidity() * 100;
+    lastTempRead = millis();
+    int chk = myDHT.read();
+    temperatureDHT = temperature;
+    humidityDHT = humidity;
+    chkDHT = chk;
   }
-
-  int temperature = temp1;
-
+ 
+  int temperature = tempDALLAS;
 
 
   //cte hodnotu svetla 1
@@ -1555,6 +1549,10 @@ void handleGetDoomaster()  { //informace vypinaci
     StaticJsonBuffer<250> jsonBuffer;                           //Reserve memory space
     JsonObject& root = jsonBuffer.createObject();
     root["deviceTemperature"] = temperature;
+    
+    root["deviceDHTTemperature"] = temperatureDHT;
+    root["deviceDHTHumidity"] = humidityDHT;
+
 
     root["svetlo"] = value;                             // stav svetla / rele 2
     root["svetlo2"] = value2;                           // stav svetla / rele 2

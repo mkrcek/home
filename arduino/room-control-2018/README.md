@@ -22,16 +22,16 @@ Room Control by HTTP GET & POST + Apple HOMEKIT
 
 - PIN A0 = analog - snímač osvětlení
 - PIN D0 = x
-- PIN D1 = x
+- PIN D1 = teplota/vlhkost DHT11
 - PIN D2 = PIR (LOW = zaalarmováno, přerušením se aktivuje alarm)
-- PIN D3 = Tlačítko 1
-- PIN D4 = Tlačítko 2
+- PIN D3 = Tlačítko 1 (na LOW sepne)
+- PIN D4 = Tlačítko 2 (na LOW sepne)
 - PIN D5 = relé (světlo) 1
 - PIN D6 = relé (světlo) 2
-- PIN D7 = tepota (DALLAS teplota - po úpravách DHT - teplotu/vlhkost
+- PIN D7 = tepota (DALLAS teplota)
 - PIN D8 = x
 
-PINy D0, D1, D8 jsou nevyužity z důvodu nefunkčnosti připojení na teploměr
+PINy D0, D8 jsou nevyužity z důvodu nefunkčnosti připojení na teploměr.Chovají se divně :-)
 
 
 
@@ -43,6 +43,8 @@ vrátí se JSON se všemi údaji
 
       {
           "deviceTemperature": 0,   // např. 19,22 oC se odešle jako 1922
+          "deviceDHTTemperature": 2200,
+          "deviceDHTHumidity": 4600,
           "svetlo": 0,
           "svetlo2": 0,
           “analog”: 0,    //stav analogového čidla - intenzita světla 0 - 1023
@@ -78,9 +80,6 @@ pomocí GET
         GET http://xx.xx.xx.xx/1      zapne svetlo 1
         GET http://xx.xx.xx.xx/2      vypne svetlo 2
         GET http://xx.xx.xx.xx/3      zapne svetlo 2
-
-
-Kompletní API níže:
 
 
 ## POST z Arduina na server
@@ -257,6 +256,7 @@ pozn. Před odeslání JSON smazat vše s //
 Připojené jsou 2 tlačítka. Pro více tlačítek je nutná změna kodu. Tlačítka jsou nastavena takto:
 
 Tlačítko 1:
+- spíná se na LOW (viz inicializace funkce OneButton button1(digitalPins[3], true);)
 - 1 x klik: změní stav na PINu 5 (RELÉ1 / SVĚTLO 1) - Array clickPin
 - 2 x klik: změní stav na PINu 6 (RELÉ2 / SVĚTLO 2) - Array click2Pin
 - Dlouze se podrží: vypne se PINu 5+6 (RELÉ1+2 / SVĚTLO 1+2) - Array clickHoldStartPin
@@ -388,16 +388,36 @@ pozn. Před odeslání JSON smazat vše s //
 
 --------
 
-## Konfigurace Tepolta
+## Konfigurace Tepolta DHT11
 
-K Arduinu je možné připojit 2 typy teploměrů.
-- DHT11 měřící teplotu a vlhkost
-- oneWire DALLAS měřící teplotou
+K Arduinu je možné připojit 2 typy teploměrů. Tento pin řeší DHT11
 
-v kódu jsou funkce pro oba senzory, defaultní nastavení je DALLAS.
+DHT11:
+- PIN 01
+- vrací teplotu a vlhkost
+- funkce handleGetTemperature ()
+- je možné zjistit vzdáleně pomocí GET
 
+        GET xx.xx.xx.xx/pins/1
+
+a dostanu JSON
+
+          {
+            "deviceDHTTemperature": 22,
+            "deviceDHTHumidity": 46
+          }
+
+
+- konfigurace není
+
+------
+
+## Konfigurace Tepolta DALLAS
+
+K Arduinu je možné připojit 2 typy teploměrů. Tento pin řeší DALLAS
 
 DALLAS:
+- PIN 07
 - vrací 1. teploměr v řadě (další nejsou nastaveny)
 - funkce handleGetDStemperature ()
 - je možné zjistit vzdáleně pomocí GET
