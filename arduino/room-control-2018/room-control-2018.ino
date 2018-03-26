@@ -90,8 +90,8 @@ int pwmPins[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1};  //uložení hodnoty pwm,
 String namePins[] = { "NaN", "NaN", "PIR", "Tlacitko-1", "Tlacitko-1", "svetlo-1", "svetlo-2", "Teplota DS", "NaN"};  //popis
 String locationPins[] = { "", "", "", "", "", "", "", "", ""};        //popis umístění
 bool digitalWritePins[] = { false, false, false, false, false, true, true, true, false};   //piny 5, 6, 7, (8) jsou vystupní
-bool relayOnHighPins[] = { true, true, true, true, true, false, true, true, true}; //čím se sepne relé true = HIGH
-bool inusePin[] = { true, false, true, true, true, true, true, false, true};       //jeli pin používán
+bool relayOnHighPins[] = { true, true, true, true, true, false, false, true, true}; //čím se sepne relé true = HIGH
+bool inusePin[] = { false, false, true, true, true, true, true, true, false};       //jeli pin používán
 int clickPin[] = { -1, -1, -1, 5, 6, -1, -1, -1, -1};  //tlacitko-click se přepne uvedený PIN. -1 je nenastaveno
 int click2Pin[] = { -1, -1, -1, 6, 6, -1, -1, -1, -1};  //tlacitko-double click se přepne uvedený PIN. -1 je nenastaveno
 int clickHoldStartPin[] = { -1, -1, 5, 5, 6, -1, -1, -1, -1};  //tlacitko-Začne držet ... se přepne uvedený PIN. -1 je nenastaveno
@@ -1162,7 +1162,7 @@ void setup(void) {
   //Unlike WiFi.begin() which automatically configures the WiFi shield to use DHCP, WiFi.config() allows you to manually set the network address of the shield.
   //https://www.arduino.cc/en/Reference/WiFiConfig
   WiFi.config(arduinoIP, gateway, subnet);
-
+  WiFi.mode(WIFI_STA);      //není AP a nezobrazuje své SSID
   WiFi.begin(ssid, password);
   Serial.println("");
   // Wait for connection
