@@ -54,16 +54,16 @@ String deviceLocation = "Room";
 const char* ssid = ssid_config;
 const char* password = pws_config;
 
-//IPAddress arduinoIP (192, 168, 0, 71); //static IP address
-//IPAddress gateway (192, 168, 0, 1); // set gateway to match your network
-//IPAddress subnet(255, 255, 255, 0); // set subnet mask to match your network
-IPAddress arduinoIP (10, 66, 103, 6); //static IP address
-IPAddress gateway (10, 66, 100, 1); // set gateway to match your network
+IPAddress arduinoIP (arduino_IP1, arduino_IP2, arduino_IP3, arduino_IP4); //static IP address
+IPAddress gateway (gateway_IP1, gateway_IP2, gateway_IP3, gateway_IP4); // set gateway to match your network
 IPAddress subnet(255, 255, 0, 0); // set subnet mask to match your network
+
 
 //changable via HTTP POST to 192.168.0.44/device {"targetServer":"192.168.110.117","httpPort":9091}
 char targetServer[] = target_Server;    //server IP address - where he is listening
 int httpPort = target_Server_Port;     //and port to listen to
+
+bool posilatPOSTnaServer = false;       ///pokud je false=POST žádný se neprovádí, pokud je true = POST se provádí a posílá
 
 
 
@@ -90,7 +90,10 @@ int pwmPins[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1};  //uložení hodnoty pwm,
 String namePins[] = { "NaN", "NaN", "PIR", "Tlacitko-1", "Tlacitko-1", "svetlo-1", "svetlo-2", "Teplota DS", "NaN"};  //popis
 String locationPins[] = { "", "", "", "", "", "", "", "", ""};        //popis umístění
 bool digitalWritePins[] = { false, false, false, false, false, true, true, true, false};   //piny 0, 5, 6, 7, (8) jsou vystupní
-bool relayOnHighPins[] = { true, true, true, true, true, false, false, true, true}; //čím se sepne relé true = HIGH
+// BOUDA rele=HIGH bool relayOnHighPins[] = { true, true, true, true, true, false, false, true, true}; //čím se sepne relé true = HIGH
+
+bool relayOnHighPins[] = { true, true, true, true, true, true, true, true, true}; //čím se sepne relé true = HIGH
+
 bool inusePin[] = { false, true, true, true, true, true, true, true, false};       //jeli pin používán
 int clickPin[] =      { -1, -1, -1, 5, 6, -1, -1, -1, -1};  //tlacitko-click se přepne uvedený PIN. -1 je nenastaveno
 int click2Pin[] =     { -1, -1, -1, 6, 6, -1, -1, -1, -1};  //tlacitko-double click se přepne uvedený PIN. -1 je nenastaveno
@@ -185,20 +188,20 @@ void handleGetDStemperature()  { //informace o teplotě z Dallas OneWire
   int temperature = tempDALLAS;
 
 
-    //==JSON vytvoreni obsahu ==
-    StaticJsonBuffer<250> jsonBuffer;                           //Reserve memory space
-    JsonObject& root = jsonBuffer.createObject();
-    root["deviceTemperature"] = temperature;
-    root["actmillis"] = actmill;     //od 0mena, pro 0mena
-    root["TempTime"] = lastTempRead;     //od 0mena, pro 0mena
+  //==JSON vytvoreni obsahu ==
+  StaticJsonBuffer<250> jsonBuffer;                           //Reserve memory space
+  JsonObject& root = jsonBuffer.createObject();
+  root["deviceTemperature"] = temperature;
+  root["actmillis"] = actmill;     //od 0mena, pro 0mena
+  root["TempTime"] = lastTempRead;     //od 0mena, pro 0mena
 
-    //==JSON generuje vystup ==
-    int len = root.measureLength() + 1; //delka cele zpravy
-    char rootstr[len];
-    root.printTo(rootstr, len);         //vygeneruje JSON
-    message += rootstr;
+  //==JSON generuje vystup ==
+  int len = root.measureLength() + 1; //delka cele zpravy
+  char rootstr[len];
+  root.printTo(rootstr, len);         //vygeneruje JSON
+  message += rootstr;
 
-    server.send(200, "application/json", message);
+  server.send(200, "application/json", message);
 
 }
 
@@ -223,19 +226,19 @@ void handleGetTemperature() {    //informace o teplotě a vlhkosti DHT11
 
     // kontrola, je li v pořádku teplota //https://playground.arduino.cc/Main/DHTLib    //musímít napájení +5v ne 3.3
     int chk = myDHT.read();
-        
+
     Serial.print("DHT - teplota: ");
     Serial.print(temperature);
     Serial.print(" a vlhkost : ");
     Serial.print(humidity);
-    Serial.print(" a kontrolni chybovy soucet : ");     
+    Serial.print(" a kontrolni chybovy soucet : ");
     Serial.println(chk);
     temperatureDHT = temperature;
     humidityDHT = humidity;
     chkDHT = chk;
   }
 
-  
+
   if (chkDHT != 1) {
     // při chybném čtení vypiš hlášku
     message = ("Chyba pri cteni DHT senzoru!");
@@ -783,24 +786,31 @@ void handleOptionsPir() {   //korekce pro CORS
 
 
 void handleRoot() {         //help v rootu IP adresy
-  String message = "";
 
+  String message = "";
+  message += "<!DOCTYPE html>";
+  message += "<html>";
+  message += "<head>";
+  message += "<meta charset=\"utf-8\">";
+  message += "</head>";
+  message += "<body>";
   message += "<h1>homeDevice </h1>";
   message += "<p>Verze: " + String(deviceSwVersion) + "</p>";
-  message += "<p>IP adresa: http://" +  WiFi.localIP().toString() + "</p>";
+  message += "<p>IP adresa a stavy pinů: ";
+  message += "<a href=\"http://\\" + WiFi.localIP().toString() + "/ \">http://" +  WiFi.localIP().toString() + "</a></p>";
   //  message += "<p>mDNS adresa: http://" +  String(deviceId) + ".local</p>";
 
-  message += "<h2>Současná zapojení</h2>";
-  message += "<p>PIN 0 = teplota a vlhkost</p>";
-  message += "<p>PIN 1 = PIR venkovni //neni nastaceno</p>";
-  message += "<p>PIN 2 = PIR vnitřní: zapne / vypne svetlo</p>";
-  message += "<p>PIN 3 = CLICK: vypínač bouda / CLICK2: vypínač okolí / HOLD: vypne svetlo, v boudoucnosti vše</p>";
-  message += "<p>PIN 4 = CLICK: vypínač okolí   //integrovana ale pridat PIN po spusteni</p>";
-  message += "<p>PIN 5 = relé světlo bouda</p>";
-  message += "<p>PIN 6 = relé světlo venku okolí</p>";
-  message += "<p>PIN 7 = PWM - přes udělátko na boardu ledky ...... //někdy bude : vrata //neni</p>";
-  message += "<p>PIN 8 = branka // neni</p>";
-  message += "<p>PIN A0 - světlo solar</p>";
+  message += "<h2>zapojeni je popsáno v souboru README na http://github.com/mkrcek</h2>";
+  message += "<p>PIN A0 = analog - snímač osvětlení</p>";
+  message += "<p>PIN D0 = x</p>";
+  message += "<p>PIN D1 = teplota/vlhkost DHT11</p>";
+  message += "<p>PIN D2 = PIR (LOW = zaalarmováno, přerušením se aktivuje alarm)</p>";
+  message += "<p>PIN D3 = Tlačítko 1 (na LOW sepne)</p>";
+  message += "<p>PIN D4 = Tlačítko 2 (na LOW sepne)</p>";
+  message += "<p>PIN D5 = relé (světlo) 1</p>";
+  message += "<p>PIN D6 = relé (světlo) 2</p>";
+  message += "<p>PIN D7 = tepota (DALLAS teplota)</p>";
+  message += "<p>PIN D8 = x</p>";
 
 
   message += "<h2>Popis REST API</h2>";
@@ -822,6 +832,10 @@ void handleRoot() {         //help v rootu IP adresy
   message += "<br><p>PIR: (je jen pinu 2)";
   message += "<a href=\"http://\\" + WiFi.localIP().toString() + "/pir/2 \"> http://" +  WiFi.localIP().toString() + "/analog</a></p>";
   message += "<p>Je možné menit pomoci POST jen /interval/";
+
+
+  message += "</body>";
+  message += "</html>";
 
   server.send(200, "text/html", message);
 
@@ -846,13 +860,13 @@ void handleNotFound() {     //pokud URL není nalezeno, používám pro laděni 
 
 void resetPins() {          //prvotní nastavení - nastav vystupni PIN na vypnuto
 
-//pro tlačítka:
-      pinMode(digitalPins[pinTlacitka1], INPUT_PULLUP);
-      digitalWrite(digitalPins[pinTlacitka1], LOW );
+  //pro tlačítka:
+  pinMode(digitalPins[pinTlacitka1], INPUT_PULLUP);
+  digitalWrite(digitalPins[pinTlacitka1], LOW );
 
-      pinMode(digitalPins[pinTlacitka2], INPUT_PULLUP);
-      digitalWrite(digitalPins[pinTlacitka2], LOW );
-      
+  pinMode(digitalPins[pinTlacitka2], INPUT_PULLUP);
+  digitalWrite(digitalPins[pinTlacitka2], LOW );
+
   int pinCount = 0;
   pinCount = sizeof(digitalPins) / sizeof(digitalPins[0]);  //sizeof je mnozstvi bytu v digitalPins, ne pocet elementu. Proto se musi vydelit
   for (int i = 0; i < pinCount ; i++) {
@@ -864,7 +878,7 @@ void resetPins() {          //prvotní nastavení - nastav vystupni PIN na vypnu
       } else {
         digitalWrite(digitalPins[i], 1);
       }
-    } 
+    }
   }
 }
 
@@ -872,76 +886,84 @@ void resetPins() {          //prvotní nastavení - nastav vystupni PIN na vypnu
 
 void sendPostToServer(int pinNumber, int pinValue, int pinPwm) { //poslani POST na server
 
-  //nastavení serveru, na který budu poslouchat a posílat POST
-  String postMessage;
-  String url = "/pins/" + String(pinNumber);
+  // ****
+    //jestli vůbec provádět odesílání - true= určitě ano, false - NE
+  // ****
+
+  if (posilatPOSTnaServer) { 
+
+    //nastavení serveru, na který budu poslouchat a posílat POST
+    String postMessage;
+    String url = "/pins/" + String(pinNumber);
+
+    //pripojeni na server
+    Serial.print("connecting to ");
+    Serial.println(targetServer);
+    // Use WiFiClient class to create TCP connections
+    WiFiClient client;
 
 
-  //pripojeni na server
-  Serial.print("connecting to ");
-  Serial.println(targetServer);
-  // Use WiFiClient class to create TCP connections
-  WiFiClient client;
 
-
-
-  if (!client.connect(targetServer, httpPort)) {
-    Serial.println("connection failed");
-    return;
-  }
-
-
-  //==JSON vytvoreni obsahu ==
-  StaticJsonBuffer<200> jsonBuffer;                           //Reserve memory space
-  JsonObject& root = jsonBuffer.createObject();
-  root["value"] = pinValue;
-  root["pwm"] = pinPwm;
-  //==
-
-
-  //==JSON generuje vystup ==
-  int len = root.measureLength() + 1; //delka cele zpravy
-  char rootstr[len];
-  root.printTo(rootstr, len);         //vygeneruje JSON
-  postMessage = rootstr;
-  //==
-
-
-  // We now create a URI for the request
-  Serial.print("Requesting URL: ");
-  Serial.println(url);
-
-  /*
-    // This will send the GET request to the server
-    //client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-    //              "targetServer: " + targetServer + "\r\n" +
-    //              "Connection: close\r\n\r\n");
-
-  */
-  // a toto pošle POST
-  client.print(String("POST ") + url + " HTTP/1.1\r\n" +
-               "Host: " + targetServer + "\r\n" +
-               "Content-Type: application/json\r\n" +    //like application/x-www-form-urlencoded, multipart/form-data or application/json)
-               "Connection: keep-alive\r\n" +               //Connection: keep-alive: https://blog.insightdatascience.com/learning-about-the-http-connection-keep-alive-header-7ebe0efa209d
-               "Content-Length: " + postMessage.length() + "\r\n\r\n" +
-               postMessage + "\r\n");
-
-  unsigned long timeout = millis();
-  while (client.available() == 0) {
-    if (millis() - timeout > 5000) {
-      Serial.println(">>> Client Timeout !");
-      client.stop();
+    if (!client.connect(targetServer, httpPort)) {
+      Serial.println("connection failed");
       return;
     }
-  }
 
-  // Read all the lines of the reply from server and print them to Serial
-  while (client.available()) {
-    String line = client.readStringUntil('\r');
-    Serial.print(line);
-  }
-  Serial.println();
-  Serial.println("closing connection");
+
+    //==JSON vytvoreni obsahu ==
+    StaticJsonBuffer<200> jsonBuffer;                           //Reserve memory space
+    JsonObject& root = jsonBuffer.createObject();
+    root["value"] = pinValue;
+    root["pwm"] = pinPwm;
+    //==
+
+
+    //==JSON generuje vystup ==
+    int len = root.measureLength() + 1; //delka cele zpravy
+    char rootstr[len];
+    root.printTo(rootstr, len);         //vygeneruje JSON
+    postMessage = rootstr;
+    //==
+
+
+    // We now create a URI for the request
+    Serial.print("Requesting URL: ");
+    Serial.println(url);
+
+    /*
+      // This will send the GET request to the server
+      //client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+      //              "targetServer: " + targetServer + "\r\n" +
+      //              "Connection: close\r\n\r\n");
+
+    */
+    // a toto pošle POST
+    client.print(String("POST ") + url + " HTTP/1.1\r\n" +
+                 "Host: " + targetServer + "\r\n" +
+                 "Content-Type: application/json\r\n" +    //like application/x-www-form-urlencoded, multipart/form-data or application/json)
+                 "Connection: keep-alive\r\n" +               //Connection: keep-alive: https://blog.insightdatascience.com/learning-about-the-http-connection-keep-alive-header-7ebe0efa209d
+                 "Content-Length: " + postMessage.length() + "\r\n\r\n" +
+                 postMessage + "\r\n");
+
+    unsigned long timeout = millis();
+    while (client.available() == 0) {
+      if (millis() - timeout > 5000) {
+        Serial.println(">>> Client Timeout !");
+        client.stop();
+        return;
+      }
+    }
+
+    // Read all the lines of the reply from server and print them to Serial
+    while (client.available()) {
+      String line = client.readStringUntil('\r');
+      Serial.print(line);
+    }
+    Serial.println();
+    Serial.println("closing connection");
+
+  } //konec IF - jestli vůbec provádět
+
 
 } //konec fce
 
@@ -1169,6 +1191,7 @@ void setup(void) {
   WiFi.mode(WIFI_STA);      //není AP a nezobrazuje své SSID
   WiFi.begin(ssid, password);
   Serial.println("");
+
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -1189,20 +1212,20 @@ void setup(void) {
 
 
 
-// ******
-//funkčnost pro DOOMastera
+  // ******
+  //funkčnost pro DOOMastera
 
   server.on("/", handleGetDoomaster);         //zobrazí všechny vystupy pinů
 
-    //nastavení pomocí GET místo klasického POST
+  //nastavení pomocí GET místo klasického POST
   server.on("/1", handleZapni1);   //testování s Omenem Doomaster - zapne svetlo P5
   server.on("/0", handleVypni1);   //testování s Omenem Doomaster - vypne svetlo P5
   server.on("/3", handleZapni2);   //testování s Omenem Doomaster - zapne svetlo P5
   server.on("/2", handleVypni2);   //testování s Omenem Doomaster - vypne svetlo P5
-//funkčnost pro DOOMastera - konec
+  //funkčnost pro DOOMastera - konec
 
 
-// ******
+  // ******
 
   server.on("/help", handleRoot);         //zde je i zakladni help a popis
 
@@ -1224,7 +1247,7 @@ void setup(void) {
   server.on("/pins/8", HTTP_GET, handleGetDigiPin);
 
   //nastaveni PINu pomoci POST
-  server.on("/pins/0", HTTP_POST, handleSetDigiPin); 
+  server.on("/pins/0", HTTP_POST, handleSetDigiPin);
   //server.on("/pins/1", HTTP_POST, handleSetDigiPin);- není možné, je to teplotni číslo
   server.on("/pins/2", HTTP_POST, handleSetDigiPin);
   server.on("/pins/3", HTTP_POST, handleSetDigiPin);
@@ -1235,7 +1258,7 @@ void setup(void) {
   server.on("/pins/8", HTTP_POST, handleSetDigiPin);
 
   //osetreni stavu CORS, pomoci OPTIONS
-  server.on("/pins/0", HTTP_OPTIONS, handleOptionsDigiPin);  
+  server.on("/pins/0", HTTP_OPTIONS, handleOptionsDigiPin);
   //server.on("/pins/1", HTTP_OPTIONS, handleOptionsDigiPin);- není možné, je to teplotni číslo
   server.on("/pins/2", HTTP_OPTIONS, handleOptionsDigiPin);
   server.on("/pins/3", HTTP_OPTIONS, handleOptionsDigiPin);
@@ -1302,10 +1325,10 @@ void setup(void) {
 
 
 
-//TEPLOTA DS
-    pinMode(digitalPins[pinCidlaDS], OUTPUT);  //nutné pro ESP - MEGA asi má
-   // zapnuti­ komunikace knihovny s teplotnim cidlem
-    senzoryDS.begin();
+  //TEPLOTA DS
+  pinMode(digitalPins[pinCidlaDS], OUTPUT);  //nutné pro ESP - MEGA asi má
+  // zapnuti­ komunikace knihovny s teplotnim cidlem
+  senzoryDS.begin();
 
 
 
@@ -1363,16 +1386,16 @@ void handleZapni1() {     //zapne svetlo na PIN 5
 
   //nově
 
-    int value = 1;
-    if (relayOnHighPins[pinNumber]) {
-      digitalWrite(digitalPins[pinNumber], value);
+  int value = 1;
+  if (relayOnHighPins[pinNumber]) {
+    digitalWrite(digitalPins[pinNumber], value);
+  } else {
+    if (value == 1) {
+      digitalWrite(digitalPins[pinNumber], 0);
     } else {
-      if (value == 1) {
-        digitalWrite(digitalPins[pinNumber], 0);
-      } else {
-        digitalWrite(digitalPins[pinNumber], 1);
-      }
+      digitalWrite(digitalPins[pinNumber], 1);
     }
+  }
   server.send(200, "text/plain", "Konfigurace nastavena");
 
 } //konec fce
@@ -1391,16 +1414,16 @@ void handleVypni1() {     //vypne svetlo na PIN 5
 
 
 
-    int value = 0;
-    if (relayOnHighPins[pinNumber]) {
-      digitalWrite(digitalPins[pinNumber], value);
+  int value = 0;
+  if (relayOnHighPins[pinNumber]) {
+    digitalWrite(digitalPins[pinNumber], value);
+  } else {
+    if (value == 1) {
+      digitalWrite(digitalPins[pinNumber], 0);
     } else {
-      if (value == 1) {
-        digitalWrite(digitalPins[pinNumber], 0);
-      } else {
-        digitalWrite(digitalPins[pinNumber], 1);
-      }
+      digitalWrite(digitalPins[pinNumber], 1);
     }
+  }
   server.send(200, "text/plain", "Konfigurace nastavena");
 
 } //konec fce
@@ -1417,16 +1440,16 @@ void handleZapni2() {     //zapne svetlo na PIN 6
 
   //nově
 
-    int value = 1;
-    if (relayOnHighPins[pinNumber]) {
-      digitalWrite(digitalPins[pinNumber], value);
+  int value = 1;
+  if (relayOnHighPins[pinNumber]) {
+    digitalWrite(digitalPins[pinNumber], value);
+  } else {
+    if (value == 1) {
+      digitalWrite(digitalPins[pinNumber], 0);
     } else {
-      if (value == 1) {
-        digitalWrite(digitalPins[pinNumber], 0);
-      } else {
-        digitalWrite(digitalPins[pinNumber], 1);
-      }
+      digitalWrite(digitalPins[pinNumber], 1);
     }
+  }
   server.send(200, "text/plain", "Konfigurace nastavena");
 
 } //konec fce
@@ -1445,16 +1468,16 @@ void handleVypni2() {     //vypne svetlo na PIN 6
 
 
 
-    int value = 0;
-    if (relayOnHighPins[pinNumber]) {
-      digitalWrite(digitalPins[pinNumber], value);
+  int value = 0;
+  if (relayOnHighPins[pinNumber]) {
+    digitalWrite(digitalPins[pinNumber], value);
+  } else {
+    if (value == 1) {
+      digitalWrite(digitalPins[pinNumber], 0);
     } else {
-      if (value == 1) {
-        digitalWrite(digitalPins[pinNumber], 0);
-      } else {
-        digitalWrite(digitalPins[pinNumber], 1);
-      }
+      digitalWrite(digitalPins[pinNumber], 1);
     }
+  }
   server.send(200, "text/plain", "Konfigurace nastavena");
 
 } //konec fce
@@ -1474,7 +1497,7 @@ void handleGetDoomaster()  { //informace vypinaci
   unsigned long actmill = millis();
 
 
-  // Teplota 
+  // Teplota
   // aktualizuje každcýh 5 s
   if ((millis() - lastTempRead) > 5000) {
 
@@ -1494,7 +1517,7 @@ void handleGetDoomaster()  { //informace vypinaci
     humidityDHT = humidity;
     chkDHT = chk;
   }
- 
+
   int temperature = tempDALLAS;
 
 
@@ -1514,10 +1537,10 @@ void handleGetDoomaster()  { //informace vypinaci
     }
   }
 
-    Serial.print("rele 1 je: ");
-    Serial.println(value);
+  Serial.print("rele 1 je: ");
+  Serial.println(value);
 
- //cte hodnotu svetla 2
+  //cte hodnotu svetla 2
   int value2 = 0;
   int pinNumber2 = 6;
 
@@ -1534,8 +1557,8 @@ void handleGetDoomaster()  { //informace vypinaci
   }
 
 
-    Serial.print("rele 2 je: ");
-    Serial.println(value2);
+  Serial.print("rele 2 je: ");
+  Serial.println(value2);
 
 
   //cte hodnotu Analogového vstupu - intenzita osvetleni
@@ -1545,28 +1568,28 @@ void handleGetDoomaster()  { //informace vypinaci
 
 
 
- //==JSON vytvoreni obsahu ==
-    StaticJsonBuffer<250> jsonBuffer;                           //Reserve memory space
-    JsonObject& root = jsonBuffer.createObject();
-    root["deviceTemperature"] = temperature;
-    
-    root["deviceDHTTemperature"] = temperatureDHT;
-    root["deviceDHTHumidity"] = humidityDHT;
+  //==JSON vytvoreni obsahu ==
+  StaticJsonBuffer<250> jsonBuffer;                           //Reserve memory space
+  JsonObject& root = jsonBuffer.createObject();
+  root["deviceTemperature"] = temperature;
+
+  root["deviceDHTTemperature"] = temperatureDHT;
+  root["deviceDHTHumidity"] = humidityDHT;
 
 
-    root["svetlo"] = value;                             // stav svetla / rele 2
-    root["svetlo2"] = value2;                           // stav svetla / rele 2
-    root["analog"] = value_analog;                      // stav analogového čidla - intenzita světla
-    root["motion"] = alarmStatusValue[2];       // stav PIR čidla na PIN číslo 2
-    root["actmillis"] = actmill;     //od 0mena, pro 0mena
-    root["temptime"] = lastTempRead;     //od 0mena, pro 0mena
+  root["svetlo"] = value;                             // stav svetla / rele 2
+  root["svetlo2"] = value2;                           // stav svetla / rele 2
+  root["analog"] = value_analog;                      // stav analogového čidla - intenzita světla
+  root["motion"] = alarmStatusValue[2];       // stav PIR čidla na PIN číslo 2
+  root["actmillis"] = actmill;     //od 0mena, pro 0mena
+  root["temptime"] = lastTempRead;     //od 0mena, pro 0mena
 
-    //==JSON generuje vystup ==
-    int len = root.measureLength() + 1; //delka cele zpravy
-    char rootstr[len];
-    root.printTo(rootstr, len);         //vygeneruje JSON
-    message += rootstr;
+  //==JSON generuje vystup ==
+  int len = root.measureLength() + 1; //delka cele zpravy
+  char rootstr[len];
+  root.printTo(rootstr, len);         //vygeneruje JSON
+  message += rootstr;
 
-    server.send(200, "application/json", message);
+  server.send(200, "application/json", message);
 
 }

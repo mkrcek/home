@@ -11,6 +11,18 @@ Room Control by HTTP GET & POST + Apple HOMEKIT
 ## Co nového ve verzi
 
 
+### 27.3.
+
+Pozastaveni odesílání POST na Server
+- protože DM server zatím nepříjmá POST, tak se díky odesílání POST Arduino zastavovalo.
+- var posilatPOSTnaServer = false (neposílá je defaultni nastaveni)
+
+Změna nastaveni IP adresy
+- IP adresu se nově nastavuje v wifi_config
+
+
+### 26.3.
+
 - verze 3/2018
 - podpora pro DOOMASTER - NE PRO HOMEKIT (ten se musí upravit)
 
@@ -84,6 +96,8 @@ pomocí GET
 
 ## POST z Arduina na server
 
+//27.3. deaktivováno odesílání POST//
+
 Arduino při události stisku tlačítka nebo PIR odesílá POST na server
 
 **Stisknut vypínač číslo 1:**
@@ -131,7 +145,6 @@ kde "“value”" je v intervalu 0-5 (viz MOTION: Stav PIR čidla)
 
 # ** PODROBNE NASTAVENI **
 ==================
-
 
 ## Konfigurace Analog = Intenzita světla
 
@@ -480,3 +493,9 @@ pozn. Před odeslání JSON smazat vše s //
 ## Konfigurace souborem
 
 v souboru wifi_config.h je uložena konfigurace načtená při kompilaci. Příklad je uveden v wifi_config_example
+
+
+## Posílání POST na server
+
+- 27.3 pozastaveni odesílání POST na Server
+- var posilatPOSTnaServer = false (neposílá je defaultni nastaveni)
