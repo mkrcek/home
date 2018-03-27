@@ -54,7 +54,7 @@ int clickHoldEndPin[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1};  //tlacitko-Pust�
 
 // ************* ARDUINO BORAD configuration *****
 
-String deviceSwVersion = "2017-11-14";
+String deviceSwVersion = "2018-03-27";
 String deviceBoard = "RobotDyn Wifi D1R2";
 char deviceId[] = "esp8266garage";
 String deviceName = "GarageController";
@@ -75,8 +75,13 @@ String deviceLocation = "Garage";
 const char* ssid = ssid_config; 
 const char* password = pws_config;
 
+IPAddress arduinoIP (arduino_IP1, arduino_IP2, arduino_IP3, arduino_IP4); //static IP address
+IPAddress gateway (gateway_IP1, gateway_IP2, gateway_IP3, gateway_IP4); // set gateway to match your network
+IPAddress subnet(255, 255, 0, 0); // set subnet mask to match your network
+
+
 //changable via HTTP POST to 192.168.0.44/device {"targetServer":"192.168.110.117","httpPort":9091}
-char targetServer[] = target_Server;    //server IP address - where he is listening
+ char targetServer[] = target_Server;    //server IP address - where he is listening
  int httpPort = target_Server_Port;     //and port to listen to
   
 
@@ -948,8 +953,20 @@ void setup() {
 
 
  // ******* nastavení a připojení WIFI
+ //dns adresa
+  //WiFi.begin(ssid, password);
+  //Serial.println("");
+
+
+  // ******* nastavení a připojení WIFI
+  //Unlike WiFi.begin() which automatically configures the WiFi shield to use DHCP, WiFi.config() allows you to manually set the network address of the shield.
+  //https://www.arduino.cc/en/Reference/WiFiConfig
+  WiFi.config(arduinoIP, gateway, subnet);
+  WiFi.mode(WIFI_STA);      //není AP a nezobrazuje své SSID
   WiFi.begin(ssid, password);
   Serial.println("");
+  
+  
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
