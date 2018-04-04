@@ -90,9 +90,9 @@ int pwmPins[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1};  //uložení hodnoty pwm,
 String namePins[] = { "NaN", "NaN", "PIR", "Tlacitko-1", "Tlacitko-1", "svetlo-1", "svetlo-2", "Teplota DS", "NaN"};  //popis
 String locationPins[] = { "", "", "", "", "", "", "", "", ""};        //popis umístění
 bool digitalWritePins[] = { false, false, false, false, false, true, true, true, false};   //piny 0, 5, 6, 7, (8) jsou vystupní
-// BOUDA rele=HIGH bool relayOnHighPins[] = { true, true, true, true, true, false, false, true, true}; //čím se sepne relé true = HIGH
 
-bool relayOnHighPins[] = { true, true, true, true, true, true, true, true, true}; //čím se sepne relé true = HIGH
+ bool relayOnHighPins[] = { true, true, true, true, true, false, false, true, true}; //čím se sepne relé true = HIGH .....
+//bool relayOnHighPins[] = { true, true, true, true, true, true, true, true, true}; //čím se sepne relé true = HIGH ....v BOUDA je rele spínané HIGH
 
 bool inusePin[] = { false, true, true, true, true, true, true, true, false};       //jeli pin používán
 int clickPin[] =      { -1, -1, -1, 5, 6, -1, -1, -1, -1};  //tlacitko-click se přepne uvedený PIN. -1 je nenastaveno
@@ -1192,6 +1192,33 @@ void setup(void) {
   WiFi.begin(ssid, password);
   Serial.println("");
 
+
+
+//WifiScan: do konzole zobrazí počet a jméno dostupných WiFi Sítí
+  //https://github.com/esp8266/Arduino/tree/master/doc/esp8266wifi
+  //https://github.com/esp8266/Arduino/blob/master/doc/esp8266wifi/scan-examples.rst
+  Serial.println("** Scan Networks **");
+  byte numSsid = WiFi.scanNetworks();
+  Serial.print("SSID List:");
+  Serial.println(numSsid);
+  for (int i = 0; i < numSsid; i++)
+  {
+    //Serial.println(WiFi.SSID(i));   //jen jména
+    Serial.printf("%d: %s, Ch:%d (%ddBm) %s\n", i+1, WiFi.SSID(i).c_str(), WiFi.channel(i), WiFi.RSSI(i), WiFi.encryptionType(i) == ENC_TYPE_NONE ? "open" : "");
+  }
+  Serial.println();
+
+            //output example_ 
+            //** Scan Networks **
+            //SSID List:2
+            //1: UPC3515659, Ch:1 (-86dBm) 
+            //2: UPC Wi-Free, Ch:1 (-88dBm) 
+//KONEC WifiScan
+
+
+
+  
+
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -1537,8 +1564,8 @@ void handleGetDoomaster()  { //informace vypinaci
     }
   }
 
-  Serial.print("rele 1 je: ");
-  Serial.println(value);
+ // Serial.print("rele 1 je: ");
+  // Serial.println(value);
 
   //cte hodnotu svetla 2
   int value2 = 0;
@@ -1557,8 +1584,8 @@ void handleGetDoomaster()  { //informace vypinaci
   }
 
 
-  Serial.print("rele 2 je: ");
-  Serial.println(value2);
+  //Serial.print("rele 2 je: ");
+  //Serial.println(value2);
 
 
   //cte hodnotu Analogového vstupu - intenzita osvetleni

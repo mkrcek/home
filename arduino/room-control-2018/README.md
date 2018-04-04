@@ -10,6 +10,20 @@ Room Control by HTTP GET & POST + Apple HOMEKIT
 
 ## Co nového ve verzi
 
+### 30.3.
+
+NEW:
+
+- WiFi scan
+- do konzole zobrazí počet a jméno dostupných WiFi Sítí
+- zdroje: https://github.com/esp8266/Arduino/tree/master/doc/esp8266wifi
+- zdtoje: https://github.com/esp8266/Arduino/blob/master/doc/esp8266wifi/scan-examples.rst
+
+TODO:
+
+- nastaveni WiFi přes Mobil (zajímavé)
+- https://tzapu.com/esp8266-wifi-connection-manager-library-arduino-ide/
+- https://github.com/tzapu/WiFiManager
 
 ### 27.3.
 
